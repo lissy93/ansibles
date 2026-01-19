@@ -68,7 +68,7 @@
     - name: Ensure borgmatic is installed
       apt:
         name: borgmatic
-        update_cache: yes
+        update_cache: no
         state: present
 
     - name: Create borgmatic config directory

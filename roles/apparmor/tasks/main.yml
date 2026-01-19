@@ -5,7 +5,7 @@
       apt:
         name: "{{ apparmor_package }}"
         state: present
-        update_cache: yes
+        update_cache: no
 
     - name: "Ensure AppArmor is running"
       service:

@@ -2,7 +2,7 @@
   apt:
     name: cockpit
     state: present
-    update_cache: true
+    update_cache: no
 
 - name: "Install component: {{ item }}"
   apt:

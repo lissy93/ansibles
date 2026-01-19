@@ -280,7 +280,11 @@ TROUBLESHOOTING 🫨
     - Install external roles with: `ansible-galaxy install -r requirements.yml`
     - And double check the `roles_path` and `collections_paths` in ansible.cfg
 
-7. Help, my terminal is full of talking cows!
+7. ~/.netrc access too permissive
+    - Update the permissions to owner-only
+    - chmod 600 ~/.netrc
+
+8. Help, my terminal is full of talking cows!
     - This happens because you have `cowsay` installed 🐮😉
     - Just set: `nocows=1` in your ansible.cfg file
 
@@ -305,9 +309,9 @@ LICENSE 📃
 DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE  [Version 2, December 2004]
 Copyright (C) 2025 Alicia Sykes <aliciasykes.com>
 
-Everyone is permitted to copy and distribute verbatim or modified 
-copies of this license document, and changing it is allowed as long 
-as the name is changed. 
+Everyone is permitted to copy and distribute verbatim or modified
+copies of this license document, and changing it is allowed as long
+as the name is changed.
 
-TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION 
+TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 0. You just do whatever the fuck you want to

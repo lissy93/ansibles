@@ -26,13 +26,20 @@
       - wget
       - gnupg
     state: present
-    update_cache: yes
+    update_cache: no
 
-- name: Add Grafana GPG key
-  ansible.builtin.apt_key:
-    url: "{{ grafana_repo_key_url }}"
-    keyring: /etc/apt/keyrings/grafana-archive-keyring.gpg
-    state: present
+- name: Ensure keyrings directory exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download and install Grafana GPG key
+  ansible.builtin.shell: |
+    curl -fsSL {{ grafana_repo_key_url }} | gpg --dearmor -o /etc/apt/keyrings/grafana-archive-keyring.gpg
+    chmod 644 /etc/apt/keyrings/grafana-archive-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/grafana-archive-keyring.gpg
 
 - name: Add Grafana APT repository
   ansible.builtin.apt_repository:

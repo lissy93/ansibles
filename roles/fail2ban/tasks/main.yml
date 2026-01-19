@@ -10,7 +10,7 @@
   apt:
     name: fail2ban
     state: present
-    update_cache: yes
+    update_cache: no
   when: fail2ban_enabled
   tags: [fail2ban]
 

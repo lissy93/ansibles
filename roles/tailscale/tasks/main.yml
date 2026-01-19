@@ -5,25 +5,29 @@
        Set it to a valid Tailscale auth key to enable."
   when: (tailscale_auth_key | default('')) == ''
 
-- name: "Add Tailscale GPG key"
-  ansible.builtin.apt_key:
-      state: present
-      url: >-
-        https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution|lower 
-        == 'ubuntu' else 'debian' }}/{{ ansible_distribution_release }}.noarmor.gpg
+- name: "Ensure keyrings directory exists"
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  when: ansible_facts.os_family == 'Debian'
+
+- name: "Download and install Tailscale GPG key"
+  ansible.builtin.shell: |
+    curl -fsSL https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution|lower == 'ubuntu' else 'debian' }}/{{ ansible_distribution_release }}.noarmor.gpg \
+    -o /etc/apt/keyrings/tailscale-archive-keyring.gpg
+    chmod 644 /etc/apt/keyrings/tailscale-archive-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/tailscale-archive-keyring.gpg
   when: ansible_facts.os_family == 'Debian'
 
 - name: "Add Tailscale APT repository"
   ansible.builtin.apt_repository:
     repo: >-
-      deb https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution|lower 
+      deb [signed-by=/etc/apt/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution|lower
       == 'ubuntu' else 'debian' }} {{ ansible_distribution_release }} main
     state: present
-    filename: tailscale.list
-  when: ansible_facts.os_family == 'Debian'
-
-- name: "Update apt cache"
-  ansible.builtin.apt:
+    filename: tailscale
     update_cache: yes
   when: ansible_facts.os_family == 'Debian'
 
