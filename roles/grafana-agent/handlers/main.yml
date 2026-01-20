@@ -11,4 +11,3 @@
   loop:
     - /tmp/grafana-agent.zip
     - /tmp/grafana-agent-linux-amd64
-

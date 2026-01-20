@@ -16,4 +16,3 @@ maldet_quarantine_hits: false
 
 maldet_download_path: /tmp/maldetect-latest.tar.gz
 maldet_extract_path: /tmp/maldetect-*
-

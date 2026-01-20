@@ -1,5 +1,5 @@
 - name: Ensure timezone is set
-  ansible.builtin.timezone:
+  community.general.timezone:
     name: "{{ timezone_name }}"
   when: timezone_name is defined
 
@@ -21,7 +21,7 @@
     dest: /etc/ntp.conf
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
     content: |
       driftfile /var/lib/ntp/ntp.drift
       restrict default kod nomodify notrap nopeer noquery
@@ -93,4 +93,4 @@
     - ntp_mode == "ntp"
     - ntpq_output is defined
     - ntpq_output.stdout is search("No association ID")
-
+  changed_when: true

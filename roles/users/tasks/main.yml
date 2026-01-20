@@ -1,29 +1,29 @@
 - name: Ensure docker group exists
-  group:
+  ansible.builtin.group:
     name: docker
     state: present
 
 - name: Create user
-  user:
+  ansible.builtin.user:
     name: "{{ new_user }}"
     shell: /bin/bash
     groups: sudo,docker
-    append: yes
+    append: true
     state: present
-    create_home: yes
+    create_home: true
     password: "{{ user_password | password_hash('sha512') }}"
   when: user_password is defined
 
 - name: Set up authorized SSH key
-  authorized_key:
+  ansible.posix.authorized_key:
     user: "{{ new_user }}"
     state: present
     key: "{{ lookup('file', user_ssh_key_path) }}"
 
 - name: Require password when using sudo
-  copy:
+  ansible.builtin.copy:
     dest: "/etc/sudoers.d/{{ new_user }}"
     content: "{{ new_user }} ALL=(ALL) ALL"
-    mode: '0440'
+    mode: "0440"
     owner: root
     group: root

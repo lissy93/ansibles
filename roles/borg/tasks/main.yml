@@ -1,28 +1,28 @@
 - name: Set borg_should_run fact
-  set_fact:
+  ansible.builtin.set_fact:
     borg_should_run: >-
       {{ (borg_enabled | default(false)) and
         (borg_repo | default('') | length > 0) and
         (borg_password | default('') | length > 0) and
         (user_email | default('') | length > 0) and
-        (borgbase_apikey | default('') | length > 0) }}
+        (borg_borgbase_apikey | default('') | length > 0) }}
 
 - name: Setup Borg backup
   block:
     - name: Skip if essential Borg variables are missing
-      debug:
+      ansible.builtin.debug:
         msg: "⚠️  Skipping Borg setup due to missing variables"
       when: not borg_should_run
 
     - name: Create SSH key if it doesn't exist
-      openssh_keypair:
+      community.crypto.openssh_keypair:
         path: "{{ borg_ssh_key_path }}"
         type: ed25519
-        comment: "{{ borgbase_key_name }}"
+        comment: "{{ borg_borgbase_key_name }}"
         force: false
 
     - name: Prompt user to back up private SSH key
-      debug:
+      ansible.builtin.debug:
         msg: |
           📢 Don't forget to back up your Borg SSH private key:
           > cat {{ borg_ssh_key_path }}
@@ -30,16 +30,16 @@
       run_once: true
 
     - name: Read public key
-      slurp:
+      ansible.builtin.slurp:
         src: "{{ borg_ssh_key_path }}.pub"
       register: borg_pubkey
-      check_mode: yes
+      check_mode: true
 
     - name: Register SSH key with BorgBase
       adhawkins.borgbase.borgbase_ssh:
         state: present
-        apikey: "{{ borgbase_apikey }}"
-        name: "{{ borgbase_key_name }}"
+        apikey: "{{ borg_borgbase_apikey }}"
+        name: "{{ borg_borgbase_key_name }}"
         key: "{{ borg_pubkey['content'] | b64decode }}"
       register: borgbase_key_result
 
@@ -56,35 +56,35 @@
       register: borgbase_repo
 
     - name: Set borgbase repo id
-      set_fact:
+      ansible.builtin.set_fact:
         borgbackup_borgbase_repo: "{{ borgbase_repo.repo.repo_id }}"
       when: borgbase_repo.repo.repo_id is defined
 
     - name: Set borgbackup_ssh_host
-      set_fact:
+      ansible.builtin.set_fact:
         borgbackup_ssh_host: "{{ borgbackup_borgbase_repo }}.repo.borgbase.com"
       when: borgbackup_borgbase_repo is defined
 
     - name: Ensure borgmatic is installed
-      apt:
+      ansible.builtin.apt:
         name: borgmatic
-        update_cache: no
+        update_cache: false
         state: present
 
     - name: Create borgmatic config directory
-      file:
+      ansible.builtin.file:
         path: /etc/borgmatic
         state: directory
         owner: root
         group: root
-        mode: '0755'
+        mode: "0755"
 
     - name: Write borgmatic config
-      copy:
+      ansible.builtin.copy:
         dest: /etc/borgmatic/config.yaml
         owner: root
         group: root
-        mode: '0600'
+        mode: "0600"
         content: |
           location:
             source_directories:
@@ -92,7 +92,7 @@
             - {{ path }}
           {% endfor %}
 
-          repositories: [ '{{ borg_repo }}' ]
+          repositories: ['{{ borg_repo }}']
 
           storage:
             encryption_passphrase: "{{ borg_password }}"
@@ -116,9 +116,9 @@
           {% endif %}
 
     - name: Enable borgmatic systemd timer
-      systemd:
+      ansible.builtin.systemd:
         name: borgmatic.timer
-        enabled: yes
+        enabled: true
         state: started
 
   when: borg_should_run

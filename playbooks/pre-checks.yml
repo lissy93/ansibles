@@ -8,7 +8,7 @@
       ansible.builtin.debug:
         msg: |
           ℹ️ Check system info
-             OS:    {{ ansible_facts.lsb.description 
+             OS:    {{ ansible_facts.lsb.description
                        | default(ansible_facts.distribution ~ " " ~ ansible_facts.distribution_version) }}
              Host:  {{ ansible_facts.fqdn | default(ansible_facts.hostname) }}
              Arch:  {{ (ansible_facts.architecture ~ ' ' ~ ansible_facts.system) | default('n/a', true) }}
@@ -23,7 +23,7 @@
       when: ansible_facts is defined
 
     - name: Ensure Python is available
-      raw: test -e /usr/bin/python3 || (apt update && apt install -y python3)
+      ansible.builtin.raw: test -e /usr/bin/python3 || (apt update && apt install -y python3)
       changed_when: false
 
     - name: Warn if user_password is not set
@@ -35,12 +35,12 @@
       when: user_password is not defined
 
     - name: "Ensure essential variables are defined"
-      assert:
+      ansible.builtin.assert:
         that:
           - user_password is defined
           - new_user is defined
           - user_ssh_key_path is defined
         fail_msg: |
           You must define user_password, new_user and user_ssh_key_path variables
-          Put them in: inventories/production/host_vars/{{ansible_hostname}}.yml
+          Put them in: inventories/production/host_vars/{{ ansible_hostname }}.yml
           or (if shared) in: inventories/production/group_vars/all.yml

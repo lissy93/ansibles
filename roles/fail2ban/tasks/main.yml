@@ -1,21 +1,21 @@
 # fail2ban/tasks/main.yml
 
 - name: "Cancel if Fail2Ban is not enabled"
-  debug:
+  ansible.builtin.debug:
     msg: "⚠️ Skipping Fail2Ban setup because 'fail2ban_enabled' is false."
   when: not fail2ban_enabled
   tags: [fail2ban]
 
 - name: Install Fail2Ban
-  apt:
+  ansible.builtin.apt:
     name: fail2ban
     state: present
-    update_cache: no
+    update_cache: false
   when: fail2ban_enabled
   tags: [fail2ban]
 
 - name: Ensure fail2ban service is enabled and running
-  systemd:
+  ansible.builtin.systemd:
     name: "{{ fail2ban_service_name }}"
     enabled: true
     state: started
@@ -23,18 +23,18 @@
   tags: [fail2ban]
 
 - name: Create fail2ban local jail configuration
-  template:
+  ansible.builtin.template:
     src: jail.local.j2
     dest: /etc/fail2ban/jail.local
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   notify: Restart Fail2Ban
   when: fail2ban_enabled
   tags: [fail2ban]
 
 - name: Configure ignoreip if provided
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/fail2ban/jail.local
     regexp: '^ignoreip ='
     line: "ignoreip = {{ fail2ban_ignoreip | join(' ') }}"
@@ -43,4 +43,3 @@
     - fail2ban_enabled
     - fail2ban_ignoreip | length > 0
   tags: [fail2ban]
-

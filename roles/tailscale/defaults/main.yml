@@ -1,5 +1,3 @@
-
-
 # Which control plane to use: "tailscale" (managed) or "headscale" (self-hosted)
 tailscale_backend: "tailscale"
 

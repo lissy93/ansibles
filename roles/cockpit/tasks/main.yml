@@ -1,11 +1,11 @@
 - name: Install Cockpit base package
-  apt:
+  ansible.builtin.apt:
     name: cockpit
     state: present
-    update_cache: no
+    update_cache: false
 
 - name: "Install component: {{ item }}"
-  apt:
+  ansible.builtin.apt:
     name: "{{ item }}"
     state: present
   loop:
@@ -19,16 +19,16 @@
     - cockpit-files
     - cockpit-sosreport
     - cockpit-podman
-  ignore_errors: true
+  failed_when: false
 
 - name: Ensure cockpit.socket is enabled and started
-  systemd:
+  ansible.builtin.systemd:
     name: cockpit.socket
     enabled: true
     state: started
 
 - name: Conditionally allow Cockpit port in UFW
-  ufw:
+  community.general.ufw:
     rule: "{{ 'allow' if cockpit_public else 'deny' }}"
     port: "{{ cockpit_port }}"
     proto: tcp

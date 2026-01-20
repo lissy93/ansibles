@@ -1,4 +1,3 @@
-
 - name: "Loki role disabled or missing config, skipping"
   ansible.builtin.meta: end_host
   when: not loki_enabled | default(false) or loki_config is not defined
@@ -8,7 +7,7 @@
     name:
       - curl
       - tar
-    update_cache: no
+    update_cache: false
     state: present
 
 - name: "Create Loki directories"
@@ -17,7 +16,7 @@
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   loop:
     - /opt/loki
     - /etc/loki
@@ -26,7 +25,7 @@
   ansible.builtin.get_url:
     url: "{{ loki_url }}"
     dest: /tmp/loki.zip
-    mode: '0644'
+    mode: "0644"
 
 - name: "Extract Loki binary"
   ansible.builtin.unarchive:
@@ -45,14 +44,14 @@
     dest: /etc/loki/config.yml
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   notify: Restart loki
 
 - name: "Install systemd service"
   ansible.builtin.copy:
     src: loki.service
     dest: /etc/systemd/system/loki.service
-    mode: '0644'
+    mode: "0644"
   notify: Reload systemd
 
 - name: "Ensure loki is enabled and started"
@@ -67,5 +66,3 @@
   register: loki_status
   failed_when: loki_status.stdout != "active"
   changed_when: false
-
-

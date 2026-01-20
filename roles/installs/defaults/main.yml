@@ -1,5 +1,3 @@
-
-
 core:
   - build-essential
   - curl
@@ -39,7 +37,7 @@ monitoring:
   - iotop       # Disk I/O per-process
   - iperf3      # Precise cross-server speed testing
   - mtr         # Traceoute, ping, network diagnostics
-  - ncdu        # Disk usage analyzer 
+  - ncdu        # Disk usage analyzer
   - atop        # Process viewer
 
 misc:

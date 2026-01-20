@@ -1,34 +1,34 @@
 ---
-- name: "skip node_exporter if disabled"
-  meta: end_host
+- name: "Skip node_exporter if disabled"
+  ansible.builtin.meta: end_host
   when: not (node_exporter_enabled | bool)
 
-- name: ensure prometheus user exists
+- name: Ensure prometheus user exists
   ansible.builtin.user:
     name: "{{ node_exporter_user }}"
     system: true
     shell: /usr/sbin/nologin
 
-- name: fetch node_exporter
+- name: Fetch node_exporter
   ansible.builtin.get_url:
     url: "{{ node_exporter_url }}"
     dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
-    mode: 0644
+    mode: "644"
 
-- name: unpack node_exporter
+- name: Unpack node_exporter
   ansible.builtin.unarchive:
     src: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
     dest: "{{ node_exporter_install_dir }}"
-    remote_src: yes
-    extra_opts: [ "--strip-components=1" ]
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
 
-- name: install node_exporter binary
+- name: Install node_exporter binary
   ansible.builtin.file:
     src: "{{ node_exporter_install_dir }}/node_exporter"
     dest: /usr/local/bin/node_exporter
     state: link
 
-- name: create systemd unit for node_exporter
+- name: Create systemd unit for node_exporter
   ansible.builtin.copy:
     dest: /etc/systemd/system/node_exporter.service
     content: |
@@ -46,7 +46,7 @@
       WantedBy=multi-user.target
   notify: reload systemd
 
-- name: ensure node_exporter is running
+- name: Ensure node_exporter is running
   ansible.builtin.systemd:
     name: node_exporter
     enabled: true

@@ -1,54 +1,61 @@
-# Configures detailed logging, metrics and monitoring for all processes 
+# Configures detailed logging, metrics and monitoring for all processes
 - name: 'Monitoring'
   hosts: all
   become: true
   tags: monitoring
-  
   tasks:
-    - include_role:
+    - name: Include monit role
+      ansible.builtin.include_role:
         name: monit
       when: monit_enabled | default(true)
-      tags: [ monit ]
-      ignore_errors: true
+      tags: [monit]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include logrotate role
+      ansible.builtin.include_role:
         name: logrotate
       when: logrotate_enabled | default(true)
-      tags: [ logrotate ]
-      ignore_errors: true
+      tags: [logrotate]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include loki role
+      ansible.builtin.include_role:
         name: loki
       when: loki_enabled | default(true)
-      tags: [ loki ]
-      ignore_errors: true
+      tags: [loki]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include grafana-agent role
+      ansible.builtin.include_role:
         name: grafana-agent
       when: grafana_agent_enabled | default(true)
-      tags: [ grafana-agent ]
-      ignore_errors: true
+      tags: [grafana-agent]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include blackbox_exporter role
+      ansible.builtin.include_role:
         name: blackbox_exporter
       when: blackbox_exporter_enabled | default(true)
-      tags: [ blackbox_exporter ]
-      ignore_errors: true
+      tags: [blackbox_exporter]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include node_exporter role
+      ansible.builtin.include_role:
         name: node_exporter
       when: node_exporter_enabled | default(true)
-      tags: [ node_exporter ]
-      ignore_errors: true
+      tags: [node_exporter]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include prometheus role
+      ansible.builtin.include_role:
         name: prometheus
       when: prometheus_enabled | default(true)
-      tags: [ prometheus ]
-      ignore_errors: true
+      tags: [prometheus]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include grafana role
+      ansible.builtin.include_role:
         name: grafana
       when: grafana_enabled | default(true)
-      tags: [ grafana ]
-      ignore_errors: true
+      tags: [grafana]
+      ignore_errors: true  # noqa ignore-errors

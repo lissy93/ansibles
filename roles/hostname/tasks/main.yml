@@ -10,7 +10,7 @@
     dest: /etc/hostname
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
     content: "{{ hostname_name }}\n"
   when:
     - hostname_set | bool
@@ -21,7 +21,7 @@
     dest: /etc/hosts
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
     content: |
       127.0.0.1   localhost
       127.0.1.1   {{ hostname_name }} {{ hostname_fqdn | default('') }}
@@ -40,4 +40,3 @@
     - hostname_set | bool
     - ansible_service_mgr == 'systemd'
   notify: Reboot if needed
-

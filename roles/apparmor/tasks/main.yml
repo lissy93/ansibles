@@ -1,34 +1,34 @@
-- block:
-
+- name: Configure AppArmor
+  block:
     # 1) Install & start the service
     - name: "Install AppArmor"
-      apt:
+      ansible.builtin.apt:
         name: "{{ apparmor_package }}"
         state: present
-        update_cache: no
+        update_cache: false
 
     - name: "Ensure AppArmor is running"
-      service:
+      ansible.builtin.service:
         name: "{{ apparmor_service }}"
         state: started
-        enabled: yes
+        enabled: true
 
     # 2) If no profiles, just skip to the end of the block
     - name: "Check if no AppArmor profiles defined"
-      debug:
+      ansible.builtin.debug:
         msg: "ℹ️ No profiles to deploy."
       when: apparmor_profiles | default([]) | length == 0
 
     # 3) Prep the directory
     - name: "Ensure /etc/apparmor.d exists"
-      file:
+      ansible.builtin.file:
         path: /etc/apparmor.d
         state: directory
         mode: "0755"
 
     # 4) Deploy each profile
     - name: "Deploy AppArmor profile {{ item.name }}"
-      copy:
+      ansible.builtin.copy:
         src: "{{ item.src }}"
         dest: "/etc/apparmor.d/{{ item.name }}"
         mode: "0644"
@@ -36,20 +36,20 @@
       when:
         - (item.state | default('present')) == 'present'
         - item.src is defined
-      notify: reload apparmor
+      notify: Reload apparmor
 
     # 5) Remove absent ones
     - name: "Remove AppArmor profile {{ item.name }}"
-      file:
+      ansible.builtin.file:
         path: "/etc/apparmor.d/{{ item.name }}"
         state: absent
       loop: "{{ apparmor_profiles }}"
       when: (item.state | default('present')) == 'absent'
-      notify: reload apparmor
+      notify: Reload apparmor
 
     # 6) Warn about misconfigured entries
     - name: "Skipping malformed profile entry"
-      debug:
+      ansible.builtin.debug:
         msg: "Profile '{{ item.name }}' has no src, skipping."
       loop: "{{ apparmor_profiles }}"
       when:

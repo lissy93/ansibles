@@ -6,18 +6,22 @@
   tags: access
 
   tasks:
-    - block:
-        - include_role:
+    - name: Configure Tailscale VPN
+      block:
+        - name: Include Tailscale role
+          ansible.builtin.include_role:
             name: tailscale
           when: tailscale_enabled | default(true)
       rescue:
-        - debug:
+        - name: Handle Tailscale role failure
+          ansible.builtin.debug:
             msg: "⚠️ tailscale role failed. Continuing with next role."
       always:
-        - name: clear any failure flag so next roles still run
-          meta: clear_host_errors
+        - name: Clear any failure flag so next roles still run
+          ansible.builtin.meta: clear_host_errors
 
-    - include_role:
+    - name: Include Cockpit role
+      ansible.builtin.include_role:
         name: cockpit
       when: cockpit_enabled | default(true)
       tags: [cockpit]

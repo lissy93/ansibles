@@ -1,15 +1,14 @@
 - name: Install monit
-  apt:
+  ansible.builtin.apt:
     name: monit
     state: present
-    update_cache: no
-
+    update_cache: false
 - name: Configure monit httpd
-  copy:
+  ansible.builtin.copy:
     dest: /etc/monit/conf-enabled/httpd
     owner: root
     group: root
-    mode: '0600'
+    mode: "0600"
     content: |
       set httpd port {{ monit_port }} and
       use address {{ monit_bind_address }}
@@ -18,17 +17,17 @@
   notify: Restart monit
 
 - name: Validate monit config
-  command: monit -t
+  ansible.builtin.command: monit -t
   changed_when: false
 
 - name: Ensure monit is running and enabled
-  systemd:
+  ansible.builtin.systemd:
     name: monit
     enabled: true
     state: started
 
 - name: Conditionally allow Monit port in UFW
-  ufw:
+  community.general.ufw:
     rule: "{{ 'allow' if monit_public else 'deny' }}"
     port: "{{ monit_port }}"
     proto: tcp

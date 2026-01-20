@@ -1,4 +1,4 @@
 - name: Restart monit
-  systemd:
+  ansible.builtin.systemd:
     name: monit
     state: restarted

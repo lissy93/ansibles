@@ -1,30 +1,42 @@
 # whether to run this role
-ufw_enabled: true
+firewall_enabled: true
 
 # if true, run `ufw reset` first
-ufw_reset: false
+firewall_reset: false
 
 # default policies
-ufw_default_incoming_policy: deny    # deny all incoming by default
-ufw_default_outgoing_policy: allow   # allow all outgoing by default
+firewall_default_incoming_policy: deny    # deny all incoming by default
+firewall_default_outgoing_policy: allow   # allow all outgoing by default
 
 # which TCP ports to allow
-ufw_allowed_tcp_ports:
+firewall_allowed_tcp_ports:
   - "{{ ssh_port | default(22) }}"
   - 80
   - 443
 
 # which UDP ports to allow
-ufw_allowed_udp_ports: []
+firewall_allowed_udp_ports: []
 
 # which TCP ports to explicitly deny
-ufw_denied_tcp_ports: []
+firewall_denied_tcp_ports: []
 
 # which UDP ports to explicitly deny
-ufw_denied_udp_ports: []
+firewall_denied_udp_ports: []
 
 # extra ports to remove when lockdown is true
-ufw_lockdown: false
+firewall_lockdown: false
 
 # enable logging ('on', 'off', 'low', 'high', etc)
-ufw_logging: on
+firewall_logging: "on"
+
+# Legacy variable names for backward compatibility
+ufw_enabled: "{{ firewall_enabled }}"
+ufw_reset: "{{ firewall_reset }}"
+ufw_default_incoming_policy: "{{ firewall_default_incoming_policy }}"
+ufw_default_outgoing_policy: "{{ firewall_default_outgoing_policy }}"
+ufw_allowed_tcp_ports: "{{ firewall_allowed_tcp_ports }}"
+ufw_allowed_udp_ports: "{{ firewall_allowed_udp_ports }}"
+ufw_denied_tcp_ports: "{{ firewall_denied_tcp_ports }}"
+ufw_denied_udp_ports: "{{ firewall_denied_udp_ports }}"
+ufw_lockdown: "{{ firewall_lockdown }}"
+ufw_logging: "{{ firewall_logging }}"

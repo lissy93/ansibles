@@ -26,41 +26,44 @@
       - wget
       - gnupg
     state: present
-    update_cache: no
+    update_cache: false
 
 - name: Ensure keyrings directory exists
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
-    mode: '0755'
+    mode: "0755"
 
 - name: Download and install Grafana GPG key
   ansible.builtin.shell: |
+    set -o pipefail
     curl -fsSL {{ grafana_repo_key_url }} | gpg --dearmor -o /etc/apt/keyrings/grafana-archive-keyring.gpg
     chmod 644 /etc/apt/keyrings/grafana-archive-keyring.gpg
   args:
     creates: /etc/apt/keyrings/grafana-archive-keyring.gpg
+    executable: /bin/bash
+  changed_when: false
 
 - name: Add Grafana APT repository
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/grafana-archive-keyring.gpg] https://apt.grafana.com stable main"
     filename: grafana
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Install Grafana package
   ansible.builtin.apt:
-    name:    "{{ grafana_package }}"
-    state:   latest
-    update_cache: no
+    name: "{{ grafana_package }}"
+    state: present
+    update_cache: false
 
 - name: Deploy custom grafana.ini if requested
   ansible.builtin.template:
-    src:  grafana.ini.j2
+    src: grafana.ini.j2
     dest: /etc/grafana/grafana.ini
     owner: root
     group: root
-    mode:  '0644'
+    mode: "0644"
   notify: Restart Grafana
   when: grafana_ini | length > 0
 
@@ -70,24 +73,24 @@
     dest: /etc/grafana/provisioning/datasources/
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: Restart Grafana
 
 - name: Enable and start Grafana service
   ansible.builtin.systemd:
     name: "{{ grafana_service }}"
     state: started
-    enabled: yes
+    enabled: true
 
 - name: Wait for Grafana HTTP to be available
   ansible.builtin.uri:
-    url:          "http://localhost:{{ grafana_port }}/api/health"
-    status_code:  200
-    return_content: no
-    timeout:      10
+    url: "http://localhost:{{ grafana_port }}/api/health"
+    status_code: 200
+    return_content: false
+    timeout: 10
   register: grafana_health
   retries: 5
-  delay:   5
-  until:   grafana_health.status == 200
+  delay: 5
+  until: grafana_health.status == 200
   failed_when: grafana_health.status != 200
   changed_when: false

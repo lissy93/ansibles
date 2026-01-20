@@ -1,11 +1,19 @@
 timezone_name: "UTC"    # Default timezone
 timezone_force: false   # Force re-set timezone even if correct
 
-ntp_enabled: true       # Whether to install and enable NTP
-ntp_mode: "chrony"      # NTP mode (chrony or ntp)
-ntp_package: "ntp"      # Package name (or chrony if you want to switch)
-ntp_servers: []         # Custom NTP servers, optional
+timezone_ntp_enabled: true       # Whether to install and enable NTP
+timezone_ntp_mode: "chrony"      # NTP mode (chrony or ntp)
+timezone_ntp_package: "ntp"      # Package name (or chrony if you want to switch)
+timezone_ntp_servers: []         # Custom NTP servers, optional
 
-sync_time_now: true     # Whether to sync time immediately after setup
+timezone_sync_time_now: true     # Whether to sync time immediately after setup
 
-ntp_service_chrony: chronyd
+timezone_ntp_service_chrony: chronyd
+
+# Legacy variable names for backward compatibility
+ntp_enabled: "{{ timezone_ntp_enabled }}"
+ntp_mode: "{{ timezone_ntp_mode }}"
+ntp_package: "{{ timezone_ntp_package }}"
+ntp_servers: "{{ timezone_ntp_servers }}"
+sync_time_now: "{{ timezone_sync_time_now }}"
+ntp_service_chrony: "{{ timezone_ntp_service_chrony }}"

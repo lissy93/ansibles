@@ -17,7 +17,7 @@
   ansible.builtin.get_url:
     url: https://downloads.cisofy.com/lynis/lynis-3.0.8.tar.gz
     dest: /tmp/lynis-latest.tar.gz
-    mode: '0644'
+    mode: "0644"
   when: lynis_enabled and not lynis_install_from_repo
   tags: [lynis]
 
@@ -25,7 +25,7 @@
   ansible.builtin.unarchive:
     src: /tmp/lynis-latest.tar.gz
     dest: /opt/
-    remote_src: yes
+    remote_src: true
   when: lynis_enabled and not lynis_install_from_repo
   tags: [lynis]
 
@@ -45,4 +45,3 @@
     var: lynis_scan.stdout_lines
   when: lynis_enabled and run_scan | default(false)
   tags: [lynis]
-

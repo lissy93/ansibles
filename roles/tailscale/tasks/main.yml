@@ -1,5 +1,5 @@
 - name: "Check if auth key provided"
-  debug:
+  ansible.builtin.debug:
     msg: >
       "Skipping Tailscale role: 'tailscale_auth_key' is not defined.
        Set it to a valid Tailscale auth key to enable."
@@ -9,13 +9,14 @@
   ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
-    mode: '0755'
+    mode: "0755"
   when: ansible_facts.os_family == 'Debian'
 
 - name: "Download and install Tailscale GPG key"
   ansible.builtin.shell: |
-    curl -fsSL https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution|lower == 'ubuntu' else 'debian' }}/{{ ansible_distribution_release }}.noarmor.gpg \
-    -o /etc/apt/keyrings/tailscale-archive-keyring.gpg
+    dist="{{ 'ubuntu' if ansible_distribution | lower == 'ubuntu' else 'debian' }}"
+    curl -fsSL "https://pkgs.tailscale.com/stable/${dist}/{{ ansible_distribution_release }}.noarmor.gpg" \
+      -o /etc/apt/keyrings/tailscale-archive-keyring.gpg
     chmod 644 /etc/apt/keyrings/tailscale-archive-keyring.gpg
   args:
     creates: /etc/apt/keyrings/tailscale-archive-keyring.gpg
@@ -24,11 +25,12 @@
 - name: "Add Tailscale APT repository"
   ansible.builtin.apt_repository:
     repo: >-
-      deb [signed-by=/etc/apt/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution|lower
-      == 'ubuntu' else 'debian' }} {{ ansible_distribution_release }} main
+      deb [signed-by=/etc/apt/keyrings/tailscale-archive-keyring.gpg]
+      https://pkgs.tailscale.com/stable/{{ 'ubuntu' if ansible_distribution | lower == 'ubuntu' else 'debian' }}
+      {{ ansible_distribution_release }} main
     state: present
     filename: tailscale
-    update_cache: yes
+    update_cache: true
   when: ansible_facts.os_family == 'Debian'
 
 - name: "Install Tailscale"
@@ -39,23 +41,18 @@
 - name: "Enable and start the tailscaled service"
   ansible.builtin.systemd:
     name: tailscaled
-    enabled: yes
+    enabled: true
     state: started
-    daemon_reload: yes
-
+    daemon_reload: true
 - name: "Join Tailnet with tailscale up"
   ansible.builtin.command: >
     tailscale up
     --authkey={{ tailscale_auth_key }}
-    --hostname={{ tailscale_hostname }}
-    {%- if tailscale_advertise_routes | length > 0 -%}
-    --advertise-routes={{ tailscale_advertise_routes | join(',') }}
-    {%- endif -%}
+    --hostname={{ tailscale_hostname }}{%- if tailscale_advertise_routes | length > 0 -%}
+    --advertise-routes={{ tailscale_advertise_routes | join(',') }}{%- endif -%}
     {%- if tailscale_advertise_exit_node | bool -%}
-    --advertise-exit-node
-    {%- endif -%}
+    --advertise-exit-node{%- endif -%}
     {%- if tailscale_tags | length > 0 -%}
-    --tags={{ tailscale_tags | join(',') }}
-    {%- endif -%}
+    --tags={{ tailscale_tags | join(',') }}{%- endif -%}
   register: tailscale_up
   changed_when: tailscale_up.rc == 0 and "'already up to date'" not in tailscale_up.stdout

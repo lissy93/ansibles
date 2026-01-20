@@ -1,13 +1,13 @@
 ---
 - name: Install logrotate package
-  apt:
+  ansible.builtin.apt:
     name: logrotate
     state: present
-    update_cache: no
+    update_cache: false
   when: logrotate_enabled | bool
 
 - name: Ensure config directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ logrotate_config_dir }}"
     state: directory
     owner: root
@@ -16,20 +16,20 @@
   when: logrotate_enabled | bool
 
 - name: Skip if no custom logrotate items defined
-  debug:
+  ansible.builtin.debug:
     msg: "No logrotate_items defined; nothing to deploy"
   when:
     - logrotate_enabled | bool
     - logrotate_items | default([]) | length == 0
 
 - name: Remove default 'system' snippet to avoid duplicate entries
-  file:
+  ansible.builtin.file:
     path: "{{ logrotate_config_dir }}/system"
     state: absent
   when: logrotate_enabled | bool
 
 - name: Deploy logrotate config for each item
-  template:
+  ansible.builtin.template:
     src: item.j2
     dest: "{{ logrotate_config_dir }}/{{ item.name }}"
     owner: root
@@ -43,8 +43,8 @@
     - logrotate_items | length > 0
 
 - name: Enable and start logrotate timer
-  systemd:
+  ansible.builtin.systemd:
     name: logrotate.timer
-    enabled: yes
+    enabled: true
     state: started
   when: logrotate_enabled | bool

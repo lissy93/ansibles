@@ -2,7 +2,7 @@
   ansible.builtin.file:
     path: "/home/{{ new_user }}/.ssh"
     state: directory
-    mode: '0700'
+    mode: "0700"
     owner: "{{ new_user }}"
     group: "{{ new_user }}"
   when: new_user is defined and not ssh_lockdown | default(false)
@@ -11,67 +11,67 @@
   ansible.builtin.file:
     path: "/home/{{ new_user }}/.ssh/authorized_keys"
     state: touch
-    mode: '0600'
+    mode: "0600"
     owner: "{{ new_user }}"
     group: "{{ new_user }}"
   when: new_user is defined and not ssh_lockdown | default(false)
 
 - name: Allow SSH on configured port
-  ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ ssh_port }}"
     proto: tcp
   when: not ssh_lockdown | default(false)
 
 - name: Ensure SSH privilege separation directory exists
-  file:
+  ansible.builtin.file:
     path: /run/sshd
     state: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   become: true
 
 - name: Harden SSH config
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?\s*{{ item.key }}\s+.*'
     line: '{{ item.key }} {{ item.value }}'
     state: present
-    backrefs: yes
+    backrefs: true
     insertafter: EOF
     validate: 'sshd -T -f %s'
   loop:
-    - { key: 'Protocol',                 value: '2' }
-    - { key: 'Compression',             value: 'delayed' }
-    - { key: 'MaxAuthTries',            value: '5' }
-    - { key: 'PrintLastLog',            value: 'yes' }
-    - { key: 'PermitEmptyPasswords',    value: 'no' }
-    - { key: 'IgnoreRhosts',            value: 'yes' }
-    - { key: 'IgnoreUserKnownHosts',    value: 'yes' }
-    - { key: 'HostBasedAuthentication', value: 'no' }
-    - { key: 'Port',                    value: '{{ ssh_port }}' }
-    - { key: 'StrictModes',             value: 'yes' }
-    - { key: 'PubkeyAuthentication',    value: 'yes' }
-    - { key: 'GSSAPIAuthentication',    value: 'no' }
-    - { key: 'KerberosAuthentication',  value: 'no' }
-    - { key: 'Ciphers',                 value: 'aes128-ctr,aes192-ctr,aes256-ctr' }
-    - { key: 'MACs',                    value: 'hmac-sha2-256,hmac-sha2-512' }
+    - {key: 'Protocol', value: '2' }
+    - {key: 'Compression', value: 'delayed' }
+    - {key: 'MaxAuthTries', value: '5' }
+    - {key: 'PrintLastLog', value: 'yes' }
+    - {key: 'PermitEmptyPasswords', value: 'no' }
+    - {key: 'IgnoreRhosts', value: 'yes' }
+    - {key: 'IgnoreUserKnownHosts', value: 'yes' }
+    - {key: 'HostBasedAuthentication', value: 'no' }
+    - {key: 'Port', value: '{{ ssh_port }}' }
+    - {key: 'StrictModes', value: 'yes' }
+    - {key: 'PubkeyAuthentication', value: 'yes' }
+    - {key: 'GSSAPIAuthentication', value: 'no' }
+    - {key: 'KerberosAuthentication', value: 'no' }
+    - {key: 'Ciphers', value: 'aes128-ctr,aes192-ctr,aes256-ctr' }
+    - {key: 'MACs', value: 'hmac-sha2-256,hmac-sha2-512' }
   notify: Restart SSH
   when: not ssh_lockdown | default(false)
   changed_when: true
 
 - name: Disable root login
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: "{{ item.regexp }}"
     line: "{{ item.line }}"
     state: present
     validate: 'sshd -T -f %s'
   loop:
-    - { regexp: '^PermitRootLogin',         line: 'PermitRootLogin no' }
-    - { regexp: '^PasswordAuthentication',  line: 'PasswordAuthentication no' }
-    - { regexp: '^ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no' }
+    - {regexp: '^PermitRootLogin', line: 'PermitRootLogin no'}
+    - {regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no'}
+    - {regexp: '^ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no'}
   when: user_ready | default(false) and not ssh_lockdown | default(false)
   notify: Restart SSH
   changed_when: true
@@ -80,7 +80,7 @@
 
 
 - name: Update SSH port
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?\s*PasswordAuthentication\s+.*'
     line: 'PasswordAuthentication no'
@@ -92,7 +92,7 @@
     - lockdown
 
 - name: Disable password authentication
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     regexp: '^#?\s*PasswordAuthentication\s+.*'
     line: 'PasswordAuthentication no'
@@ -103,17 +103,17 @@
 
 
 - name: Secure SSH private keys
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
-    mode: '0600'
+    mode: "0600"
   with_fileglob:
     - /etc/ssh/*key
   when: item is not search(".*\\.pub$") and not ssh_lockdown | default(false)
 
 - name: Secure SSH public keys
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
-    mode: '0644'
+    mode: "0644"
   with_fileglob:
     - /etc/ssh/*.pub
   when: item is search(".*\\.pub$") and not ssh_lockdown | default(false)
@@ -122,7 +122,7 @@
   ansible.builtin.systemd:
     name: ssh.socket
     state: stopped
-    enabled: no
+    enabled: false
   become: true
   when: not ssh_lockdown | default(false)
 
@@ -130,7 +130,7 @@
   ansible.builtin.systemd:
     name: ssh
     state: restarted
-    enabled: yes
+    enabled: true
   become: true
   when: not ssh_lockdown | default(false)
 

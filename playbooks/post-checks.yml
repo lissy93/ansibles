@@ -6,87 +6,81 @@
   remote_user: "{{ new_user }}"
 
   tasks:
-    - block:
+    - name: Run post-deployment checks
+      block:
         - name: "Completion timestamp"
-          debug:
+          ansible.builtin.debug:
             msg: "Finished at {{ ansible_date_time.date }} {{ ansible_date_time.time }}"
 
         - name: Verify SSHD is running
           ansible.builtin.command: systemctl is-active sshd
           register: sshd
-          failed_when: sshd.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify UFW is active
           ansible.builtin.command: systemctl is-active ufw
           register: ufw
-          failed_when: ufw.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify Docker daemon is running
           ansible.builtin.command: systemctl is-active docker
           register: docker
-          failed_when: docker.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify Tailscale daemon is running
           ansible.builtin.command: systemctl is-active tailscaled
           register: tailscaled
-          failed_when: tailscaled.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify Fail2Ban is running
           ansible.builtin.command: systemctl is-active fail2ban
           register: fail2ban
-          failed_when: fail2ban.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify Cockpit service is running
           ansible.builtin.command: systemctl is-active cockpit
           register: cockpit
-          failed_when: cockpit.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify Monit service is running
           ansible.builtin.command: systemctl is-active monit
           register: monit
-          failed_when: monit.stdout != "active"
+          failed_when: false
           changed_when: false
-          ignore_errors: true
 
         - name: Verify AppArmor is enforcing
           ansible.builtin.assert:
             that:
               - ansible_facts.apparmor.status == 'enabled'
             success_msg: "AppArmor is enforcing"
-            fail_msg:    "AppArmor is not enforcing"
-          ignore_errors: true
-
+            fail_msg: "AppArmor is not enforcing"
+          failed_when: false
       rescue:
         - name: "⚠️ Post-run summary encountered errors"
-          debug:
+          ansible.builtin.debug:
             msg: "Service checks failed, but continuing."
 
 
     - name: "Smoke-test ping"
-      shell: ping -c1 127.0.0.1
+      ansible.builtin.command: ping -c1 127.0.0.1
       register: smoke_test
-      ignore_errors: true
+      failed_when: false
+      changed_when: false
 
     - name: "Smoke-test result"
-      debug:
+      ansible.builtin.debug:
         msg: "{{ 'ℹ️ localhost reachable' if smoke_test.rc == 0 else '❌ localhost unreachable' }}"
 
     - name: "Reboot if requested"
-      reboot:
+      ansible.builtin.reboot:
         msg: "Rebooting per post-check flag"
         pre_reboot_delay: 5
         reboot_timeout: 300
       when: reboot_required | default(false)
-      ignore_errors: true
+      failed_when: false

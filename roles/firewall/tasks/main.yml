@@ -1,63 +1,63 @@
 ---
-- name: skip firewall if disabled
-  meta: end_host
+- name: Skip firewall if disabled
+  ansible.builtin.meta: end_host
   when: not ufw_enabled
 
-- name: ensure ufw is installed
-  apt:
+- name: Ensure ufw is installed
+  ansible.builtin.apt:
     name: ufw
     state: present
-    update_cache: no
+    update_cache: false
 
-- name: reset ufw to defaults
-  ufw:
+- name: Reset ufw to defaults
+  community.general.ufw:
     state: reset
   when: ufw_reset
 
-- name: set default incoming policy
-  ufw:
+- name: Set default incoming policy
+  community.general.ufw:
     direction: incoming
     policy: "{{ ufw_default_incoming_policy }}"
 
-- name: set default outgoing policy
-  ufw:
+- name: Set default outgoing policy
+  community.general.ufw:
     direction: outgoing
     policy: "{{ ufw_default_outgoing_policy }}"
 
-- name: allow TCP ports
-  ufw:
+- name: Allow TCP ports
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
   loop: "{{ ufw_allowed_tcp_ports }}"
   when: ufw_allowed_tcp_ports is defined
 
-- name: allow UDP ports
-  ufw:
+- name: Allow UDP ports
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: udp
   loop: "{{ ufw_allowed_udp_ports }}"
   when: ufw_allowed_udp_ports is defined
 
-- name: deny TCP ports
-  ufw:
+- name: Deny TCP ports
+  community.general.ufw:
     rule: deny
     port: "{{ item }}"
     proto: tcp
   loop: "{{ ufw_denied_tcp_ports }}"
   when: ufw_denied_tcp_ports is defined
 
-- name: deny UDP ports
-  ufw:
+- name: Deny UDP ports
+  community.general.ufw:
     rule: deny
     port: "{{ item }}"
     proto: udp
   loop: "{{ ufw_denied_udp_ports }}"
   when: ufw_denied_udp_ports is defined
 
-- name: lockdown - deny default SSH port 22
-  ufw:
+- name: Lockdown - deny default SSH port 22
+  community.general.ufw:
     rule: deny
     port: 22
     proto: tcp
@@ -66,13 +66,13 @@
     - ssh_port is defined
     - ssh_port | int != 22
 
-- name: enable ufw
-  ufw:
+- name: Enable ufw
+  community.general.ufw:
     state: enabled
     logging: "{{ ufw_logging }}"
 
-- name: verify ufw is active
-  command: ufw status verbose
+- name: Verify ufw is active
+  ansible.builtin.command: ufw status verbose
   register: ufw_status
   changed_when: false
   failed_when: "'Status: active' not in ufw_status.stdout"

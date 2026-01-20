@@ -22,43 +22,49 @@
   tags: essentials
 
   tasks:
-    - include_role:
+    - name: Include installs role
+      ansible.builtin.include_role:
         name: installs
       when: installs_enabled | default(true)
-      tags: [ installs ]
-      ignore_errors: true
+      tags: [installs]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include users role
+      ansible.builtin.include_role:
         name: users
       when: users_enabled | default(true)
-      tags: [ users ]
-      ignore_errors: true
+      tags: [users]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include directories role
+      ansible.builtin.include_role:
         name: directories
       when: directories_enabled | default(true)
-      tags: [ directories ]
-      ignore_errors: true
+      tags: [directories]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include timezone role
+      ansible.builtin.include_role:
         name: timezone
       when: timezone_enabled | default(true)
-      tags: [ timezone ]
-      ignore_errors: true
+      tags: [timezone]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include hostname role
+      ansible.builtin.include_role:
         name: hostname
       when: hostname_enabled | default(true)
-      tags: [ hostname ]
-      ignore_errors: true
+      tags: [hostname]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include firewall role
+      ansible.builtin.include_role:
         name: firewall
       when: firewall_enabled | default(true)
-      tags: [ firewall ]
-      ignore_errors: true
+      tags: [firewall]
+      ignore_errors: true  # noqa ignore-errors
 
-    # - include_role:
+    # - ansible.builtin.include_role:
     #     name: mail
     #   when: mail_enabled | default(false)
     #   tags: [ mail ]
@@ -77,11 +83,11 @@
   gather_facts: false
   tasks:
     - name: Attempt to login as {{ new_user }}
-      ping:
+      ansible.builtin.ping:
       register: ping_result
       failed_when: ping_result.ping != 'pong'
     - name: Mark this host as ready for lockdown
-      set_fact:
+      ansible.builtin.set_fact:
         user_ready: true
 
 - name: 'Essentials: SSH config - Prevent root login'

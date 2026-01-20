@@ -1,23 +1,23 @@
 ---
 - name: Ensure dotfiles directory exists
-  file:
+  ansible.builtin.file:
     path: "{{ dotfiles_dir }}"
     state: directory
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0755'
+    mode: "0755"
 
 # In the future, uncomment the following tasks:
 
 # - name: Clone dotfiles repository
-#   git:
+#   ansible.builtin.git:
 #     repo: "{{ dotfiles_repo }}"
 #     dest: "{{ dotfiles_dir }}"
 #     version: main
 #     accept_hostkey: true
 
 # - name: Run dotfiles install script
-#   command: "{{ dotfiles_dir }}/install.sh"
+#   ansible.builtin.command: "{{ dotfiles_dir }}/install.sh"
 #   args:
 #     chdir: "{{ dotfiles_dir }}"
 #   when: dotfiles_dir is defined

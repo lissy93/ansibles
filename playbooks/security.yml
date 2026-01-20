@@ -10,31 +10,33 @@
   become: true
   tags: security
 
-  
   tasks:
-    - include_role:
+    - name: Include fail2ban role
+      ansible.builtin.include_role:
         name: fail2ban
       when: fail2ban_enabled | default(true)
-      tags: [ fail2ban ]
-      ignore_errors: true
+      tags: [fail2ban]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include maldet role
+      ansible.builtin.include_role:
         name: maldet
       when: maldet_enabled | default(true)
-      tags: [ maldet ]
-      ignore_errors: true
+      tags: [maldet]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include lynis role
+      ansible.builtin.include_role:
         name: lynis
       when: lynis_enabled | default(true)
-      tags: [ lynis ]
-      ignore_errors: true
+      tags: [lynis]
+      ignore_errors: true  # noqa ignore-errors
 
-    - include_role:
+    - name: Include apparmor role
+      ansible.builtin.include_role:
         name: apparmor
-      when: apparmor_enabled | default(true)
-      tags: [ apparmor ]
-      ignore_errors: true
       vars:
-          run_scan: true
-
+        run_scan: true  # noqa: var-naming[no-role-prefix]
+      when: apparmor_enabled | default(true)
+      tags: [apparmor]
+      ignore_errors: true  # noqa ignore-errors

@@ -2,8 +2,8 @@ borg_enabled: true
 
 # Borg SSH
 borg_ssh_key_path: "/home/{{ ansible_user }}/.ssh/borgmatic_ed25519"
-borgbase_key_name: "{{ ansible_user }}@{{ ansible_hostname }}"
-borgbase_apikey: ''
+borg_borgbase_key_name: "{{ ansible_user }}@{{ ansible_hostname }}"
+borg_borgbase_apikey: ''
 borg_user: ''
 
 # Repo & backup target
@@ -34,5 +34,3 @@ borg_retry_wait: 60
 # Healthchecks
 borg_ping_url: ''
 borg_ping_states: [start, finish, fail]
-
-

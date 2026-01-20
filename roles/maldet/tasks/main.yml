@@ -18,7 +18,7 @@
   ansible.builtin.get_url:
     url: https://www.rfxn.com/downloads/maldetect-current.tar.gz
     dest: "{{ maldet_download_path }}"
-    mode: '0644'
+    mode: "0644"
   when: maldet_enabled
   tags: [maldet]
 
@@ -26,7 +26,7 @@
   ansible.builtin.unarchive:
     src: "{{ maldet_download_path }}"
     dest: /tmp/
-    remote_src: yes
+    remote_src: true
   when: maldet_enabled
   tags: [maldet]
 
@@ -53,21 +53,21 @@
     path: /usr/local/maldetect/conf.maldet
     regexp: "^{{ item.key }}="
     line: "{{ item.key }}={{ item.value }}"
-    backup: yes
+    backup: true
   loop:
-    - { key: "email_alert", value: "{{ '1' if maldet_email_alert else '0' }}" }
-    - { key: "email_addr",  value: "{{ maldet_email_address }}" }
-    - { key: "quar_hits",   value: "{{ '1' if maldet_quarantine_hits else '0' }}" }
+    - {key: "email_alert", value: "{{ '1' if maldet_email_alert else '0' }}" }
+    - {key: "email_addr", value: "{{ maldet_email_address }}" }
+    - {key: "quar_hits", value: "{{ '1' if maldet_quarantine_hits else '0' }}" }
   when: maldet_enabled
   tags: [maldet]
 
 - name: Deploy maldet systemd unit
-  template:
+  ansible.builtin.template:
     src: maldet.service.j2
     dest: /etc/systemd/system/maldet.service
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   notify:
     - Reload systemd
     - Restart maldet

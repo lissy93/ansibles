@@ -1,5 +1,5 @@
 - name: "Allow setup SSH fallback (port 22)"
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     port: 22
     proto: tcp
@@ -8,13 +8,13 @@
     - ssh_port | int != 22
 
 - name: "Allow SSH on custom port"
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ ssh_port }}"
     proto: tcp
 
 - name: "Allow TCP ports"
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: tcp
@@ -24,7 +24,7 @@
   when: firewall_allowed_tcp_ports is defined
 
 - name: "Allow UDP ports"
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     port: "{{ item }}"
     proto: udp
@@ -34,7 +34,7 @@
   when: firewall_allowed_udp_ports is defined
 
 - name: "Allow named services"
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: allow
     name: "{{ item }}"
   loop: "{{ firewall_allowed_services }}"

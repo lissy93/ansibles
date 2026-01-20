@@ -2,7 +2,7 @@ grafana_enabled: true
 
 # repository key & repo definition
 grafana_repo_key_url: "https://apt.grafana.com/gpg.key"
-grafana_repo:          "deb https://apt.grafana.com stable main"
+grafana_repo: "deb https://apt.grafana.com stable main"
 
 # package & service names
 grafana_package: "grafana"
@@ -12,8 +12,8 @@ grafana_service: "grafana-server"
 grafana_port: 3000
 
 # admin credentials (empty = leave default)
-grafana_admin_user:      "admin"
-grafana_admin_password:  ""
+grafana_admin_user: "admin"
+grafana_admin_password: ""
 
 # optional overrides for grafana.ini
 # must be a dict of sections → dict of key/value

@@ -6,7 +6,8 @@ prometheus_enabled: true
 prometheus_version: "2.46.0"
 
 # download URL for the official Prometheus release tarball
-prometheus_download_url: https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
+prometheus_download_url: >-
+  https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
 
 # where to install Prometheus
 prometheus_install_dir: "/opt/prometheus-{{ prometheus_version }}"

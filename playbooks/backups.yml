@@ -4,12 +4,16 @@
   become: true
   tags: backups
   tasks:
-    - block:
-        - include_role:
+    - name: Configure Borg backups
+      block:
+        - name: Include Borg role
+          ansible.builtin.include_role:
             name: borg
           when: borg_enabled | default(true)
       rescue:
-        - debug:
+        - name: Handle Borg role failure
+          ansible.builtin.debug:
             msg: "⚠️ Borg role failed. Continuing with next role."
       always:
-        - meta: clear_host_errors
+        - name: Clear any failure flag so next roles still run
+          ansible.builtin.meta: clear_host_errors

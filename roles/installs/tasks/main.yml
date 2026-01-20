@@ -1,28 +1,101 @@
 ---
+- name: "Check for common GPG key issues"
+  block:
+    - name: "Refresh Grafana GPG key if repository is present"
+      ansible.builtin.shell: |
+        set -o pipefail
+        if [ -f /etc/apt/sources.list.d/grafana.list ] || \
+           grep -r "grafana" /etc/apt/sources.list.d/ 2>/dev/null; then
+          echo "Grafana repo found, checking GPG key..."
+          wget -q -O - https://apt.grafana.com/gpg.key | \
+            gpg --dearmor | \
+            tee /usr/share/keyrings/grafana-archive-keyring.gpg > /dev/null
+          # Update the sources list to use the new keyring if needed
+          if [ -f /etc/apt/sources.list.d/grafana.list ]; then
+            sed -i \
+              's|deb https://apt.grafana.com|deb [signed-by=/usr/share/keyrings/grafana-archive-keyring.gpg] https://apt.grafana.com|g' \
+              /etc/apt/sources.list.d/grafana.list
+          fi
+          echo "Grafana GPG key refreshed"
+        else
+          echo "No Grafana repo found, skipping"
+        fi
+      args:
+        executable: /bin/bash
+      register: gpg_check_result
+      changed_when: "'refreshed' in gpg_check_result.stdout"
+      failed_when: false
+
+    - name: "Show GPG key check results"
+      ansible.builtin.debug:
+        msg: "{{ gpg_check_result.stdout_lines }}"
+      when: gpg_check_result.stdout_lines is defined
+
 - name: "Ensure APT cache is up-to-date"
-  ansible.builtin.apt:
-    update_cache: yes
-    cache_valid_time: 3600
+  block:
+    - name: "Update APT cache"
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      register: apt_update_result
+  rescue:
+    - name: "Display APT update error details"
+      ansible.builtin.debug:
+        msg: |
+          Failed to update APT cache. Details:
+          Module: {{ apt_update_result.module_stderr | default('N/A') }}
+          Stderr: {{ apt_update_result.module_stdout | default('N/A') }}
+          Message: {{ apt_update_result.msg | default('No error message provided') }}
+
+          Common causes:
+          - Expired GPG keys (check: sudo apt update)
+          - Network connectivity issues
+          - Broken repository sources
+          - Insufficient disk space
+
+          To investigate further, run: sudo apt update
+
+    - name: "Fail with detailed error"
+      ansible.builtin.fail:
+        msg: "APT cache update failed. See error details above."
 
 - name: "Upgrade all packages to latest"
-  ansible.builtin.apt:
-    upgrade: dist
-    autoremove: yes
-    autoclean: yes
+  block:
+    - name: "Upgrade all APT packages"
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: true
+        autoclean: true
+      register: apt_upgrade_result
+  rescue:
+    - name: "Display APT upgrade error details"
+      ansible.builtin.debug:
+        msg: |
+          Failed to upgrade packages. Details:
+          Module: {{ apt_upgrade_result.module_stderr | default('N/A') }}
+          Message: {{ apt_upgrade_result.msg | default('No error message provided') }}
 
-- block:
+          To investigate further, run: sudo apt upgrade
+
+    - name: "Fail with detailed error"
+      ansible.builtin.fail:
+        msg: "APT upgrade failed. See error details above."
+
+- name: "Install core packages"
+  block:
     - name: "Install core packages"
       ansible.builtin.apt:
         name: "{{ core }}"
         state: present
-        update_cache: no
+        update_cache: false
       when: core is defined and core | length > 0
   rescue:
     - name: "⚠️ Core packages failed, continuing"
       ansible.builtin.debug:
         msg: "Installation of core packages ({{ core }}) failed."
 
-- block:
+- name: "Install networking tools"
+  block:
     - name: "Install networking tools"
       ansible.builtin.apt:
         name: "{{ networking }}"
@@ -33,7 +106,8 @@
       ansible.builtin.debug:
         msg: "Installation of networking packages ({{ networking }}) failed."
 
-- block:
+- name: "Install monitoring utilities"
+  block:
     - name: "Install monitoring utilities"
       ansible.builtin.apt:
         name: "{{ monitoring }}"
@@ -44,7 +118,8 @@
       ansible.builtin.debug:
         msg: "Installation of monitoring packages ({{ monitoring }}) failed."
 
-- block:
+- name: "Install miscellaneous packages"
+  block:
     - name: "Install miscellaneous packages"
       ansible.builtin.apt:
         name: "{{ misc }}"

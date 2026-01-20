@@ -1,8 +1,9 @@
 - name: Reload systemd
   ansible.builtin.command: systemctl daemon-reload
+  changed_when: true
 
 - name: Restart maldet
   ansible.builtin.systemd:
     name: maldet
-    enabled: yes
+    enabled: true
     state: restarted

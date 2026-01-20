@@ -1,21 +1,20 @@
 ---
 - name: Skip Prometheus role if disabled
-  meta: end_host
+  ansible.builtin.meta: end_host
   when: not prometheus_enabled | bool
 
 - name: Ensure prometheus group exists
   ansible.builtin.group:
     name: "{{ prometheus_group }}"
     state: present
-    system: yes
-
+    system: true
 - name: Ensure prometheus user exists
   ansible.builtin.user:
     name: "{{ prometheus_user }}"
     group: "{{ prometheus_group }}"
-    create_home: no
+    create_home: false
     shell: /usr/sbin/nologin
-    system: yes
+    system: true
     state: present
 
 - name: Create installation, config & data directories
@@ -71,14 +70,14 @@
 - name: Enable and start Prometheus service
   ansible.builtin.systemd:
     name: prometheus
-    enabled: yes
+    enabled: true
     state: started
 
 - name: Wait for Prometheus ready endpoint
   ansible.builtin.uri:
     url: "http://localhost:{{ prometheus_port }}/-/ready"
     status_code: 200
-    return_content: no
+    return_content: false
     timeout: 5
   register: prom_ready
   retries: 5

@@ -1,13 +1,20 @@
-server_structure_enabled: true
+directories_structure_enabled: true
 
-server_directories:
+directories_paths:
   - /srv
   - /srv/infra
   - /srv/infra/stack
   - /srv/infra/stack/apps
   - /srv/infra/stack/data
 
-server_directory_owner: "{{ srv_owner | default(new_user | default('root')) }}"
-server_directory_group: "{{ srv_group | default(new_user | default('root')) }}"
+directories_owner: "{{ srv_owner | default(new_user | default('root')) }}"
+directories_group: "{{ srv_group | default(new_user | default('root')) }}"
 
-server_directory_mode: '0755'
+directories_mode: "0755"
+
+# Legacy variable names for backward compatibility
+server_structure_enabled: "{{ directories_structure_enabled }}"
+server_directories: "{{ directories_paths }}"
+server_directory_owner: "{{ directories_owner }}"
+server_directory_group: "{{ directories_group }}"
+server_directory_mode: "{{ directories_mode }}"

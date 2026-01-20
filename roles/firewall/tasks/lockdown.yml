@@ -1,5 +1,5 @@
 - name: "Deny ports no longer in use"
-  ansible.builtin.ufw:
+  community.general.ufw:
     rule: deny
     port: "{{ item }}"
   loop: "{{ firewall_deny_ports }}"

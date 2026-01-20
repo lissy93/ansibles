@@ -1,39 +1,40 @@
 ---
-- name: "skip blackbox_exporter if disabled"
-  meta: end_host
+- name: "Skip blackbox_exporter if disabled"
+  ansible.builtin.meta: end_host
   when: not (blackbox_exporter_enabled | bool)
 
-- name: fetch blackbox_exporter
+- name: Fetch blackbox_exporter
   ansible.builtin.get_url:
     url: "{{ blackbox_exporter_url }}"
     dest: "/tmp/blackbox_exporter-{{ blackbox_exporter_version }}.tar.gz"
-    mode: 0644
+    mode: "0644"
 
-- name: unpack blackbox_exporter
+- name: Unpack blackbox_exporter
   ansible.builtin.unarchive:
     src: "/tmp/blackbox_exporter-{{ blackbox_exporter_version }}.tar.gz"
     dest: "{{ blackbox_exporter_install_dir }}"
-    remote_src: yes
-    extra_opts: [ "--strip-components=1" ]
+    remote_src: true
+    extra_opts: ["--strip-components=1"]
 
-- name: install blackbox_exporter binary
+- name: Install blackbox_exporter binary
   ansible.builtin.file:
     src: "{{ blackbox_exporter_install_dir }}/blackbox_exporter"
     dest: /usr/local/bin/blackbox_exporter
     state: link
 
-- name: write blackbox modules config
+- name: Write blackbox modules config
   ansible.builtin.copy:
     dest: /etc/blackbox_exporter.yml
     content: |
       modules:
-      {%- for name,module in blackbox_modules.items() %}
+      {%- for name, module in blackbox_modules.items() %}
         {{ name }}:
           prober: {{ module.prober }}
           timeout: "{{ module.timeout }}"
       {%- endfor %}
+    mode: "0644"
 
-- name: create systemd unit for blackbox_exporter
+- name: Create systemd unit for blackbox_exporter
   ansible.builtin.copy:
     dest: /etc/systemd/system/blackbox_exporter.service
     content: |
@@ -47,9 +48,10 @@
 
       [Install]
       WantedBy=multi-user.target
-  notify: reload systemd
+    mode: "0644"
+  notify: Reload systemd
 
-- name: ensure blackbox_exporter is running
+- name: Ensure blackbox_exporter is running
   ansible.builtin.systemd:
     name: blackbox_exporter
     enabled: true
