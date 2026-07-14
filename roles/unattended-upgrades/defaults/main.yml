@@ -1,0 +1,28 @@
+---
+unattended_upgrades_enabled: true
+
+# What to auto-update (safe defaults: security only)
+unattended_upgrades_origins:
+  - "origin=Debian,codename=${distro_codename},label=Debian-Security"
+  - "origin=Ubuntu,archive=${distro_codename}-security,label=Ubuntu"
+
+# Auto-reboot if required (e.g. kernel updates)
+unattended_upgrades_auto_reboot: false
+unattended_upgrades_auto_reboot_time: "04:00"
+
+# Remove unused dependencies after upgrade
+unattended_upgrades_autoremove: true
+
+# Email notifications (empty = disabled)
+unattended_upgrades_mail: ""
+unattended_upgrades_mail_on_error: true
+
+# Bandwidth control
+unattended_upgrades_download_limit: 0  # KB/s, 0 = unlimited
+
+# Logging
+unattended_upgrades_syslog_enable: true
+unattended_upgrades_syslog_facility: "daemon"
+
+# Blacklisted packages (never auto-upgrade these)
+unattended_upgrades_blacklist: []

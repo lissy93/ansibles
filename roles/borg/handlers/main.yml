@@ -1,0 +1,4 @@
+---
+- name: Validate borgmatic
+  ansible.builtin.command: borgmatic config validate
+  changed_when: false

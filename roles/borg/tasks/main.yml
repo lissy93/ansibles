@@ -1,125 +1,102 @@
-- name: Set borg_should_run fact
-  ansible.builtin.set_fact:
-    borg_should_run: >-
-      {{ (borg_enabled | default(false)) and
-        (borg_repo | default('') | length > 0) and
-        (borg_password | default('') | length > 0) and
-        (user_email | default('') | length > 0) and
-        (borg_borgbase_apikey | default('') | length > 0) }}
+---
+- name: Check required borg variables
+  ansible.builtin.assert:
+    that:
+      - borg_enabled | bool
+      - borg_repo | length > 0
+      - borg_password | length > 0
+    fail_msg: "Borg backup disabled or missing borg_repo/borg_password"
+    quiet: true
+  ignore_errors: true
+  register: borg_vars_check
 
-- name: Setup Borg backup
-  block:
-    - name: Skip if essential Borg variables are missing
-      ansible.builtin.debug:
-        msg: "⚠️  Skipping Borg setup due to missing variables"
-      when: not borg_should_run
+- name: Skip borg if variables are missing
+  ansible.builtin.meta: end_host
+  when: borg_vars_check is failed
 
-    - name: Create SSH key if it doesn't exist
-      community.crypto.openssh_keypair:
-        path: "{{ borg_ssh_key_path }}"
-        type: ed25519
-        comment: "{{ borg_borgbase_key_name }}"
-        force: false
+- name: Install borg and borgmatic
+  ansible.builtin.apt:
+    name:
+      - borgbackup
+      - borgmatic
+    state: present
+    update_cache: false
 
-    - name: Prompt user to back up private SSH key
-      ansible.builtin.debug:
-        msg: |
-          📢 Don't forget to back up your Borg SSH private key:
-          > cat {{ borg_ssh_key_path }}
-          You'll need it to restore from backup if this server is lost.
-      run_once: true
+- name: Ensure SSH key exists
+  ansible.builtin.stat:
+    path: "{{ borg_ssh_key_path }}"
+  register: borg_key
 
-    - name: Read public key
-      ansible.builtin.slurp:
-        src: "{{ borg_ssh_key_path }}.pub"
-      register: borg_pubkey
-      check_mode: true
+- name: Fail if SSH key is missing
+  ansible.builtin.fail:
+    msg: >
+      SSH key not found at {{ borg_ssh_key_path }}.
+      Ensure the key exists and is registered with your backup provider.
+  when: not borg_key.stat.exists
 
-    - name: Register SSH key with BorgBase
-      adhawkins.borgbase.borgbase_ssh:
-        state: present
-        apikey: "{{ borg_borgbase_apikey }}"
-        name: "{{ borg_borgbase_key_name }}"
-        key: "{{ borg_pubkey['content'] | b64decode }}"
-      register: borgbase_key_result
+- name: Create borgmatic config directory
+  ansible.builtin.file:
+    path: /etc/borgmatic
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
 
-    - name: Create BorgBase repository
-      adhawkins.borgbase.borgbase_repo:
-        state: present
-        email: "{{ user_email }}"
-        password: "{{ borg_password }}"
-        name: "{{ borg_repo_name }}"
-        full_access_keys:
-          - "{{ borgbase_key_result.key_id }}"
-        quota_enabled: false
-        alert_days: 2
-      register: borgbase_repo
+- name: Deploy borgmatic config
+  ansible.builtin.copy:
+    dest: /etc/borgmatic/config.yaml
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      source_directories:
+      {% for path in borg_source_directories %}
+        - {{ path }}
+      {% endfor %}
 
-    - name: Set borgbase repo id
-      ansible.builtin.set_fact:
-        borgbackup_borgbase_repo: "{{ borgbase_repo.repo.repo_id }}"
-      when: borgbase_repo.repo.repo_id is defined
+      exclude_patterns:
+      {% for pattern in borg_exclude_patterns %}
+        - {{ pattern | to_json }}
+      {% endfor %}
 
-    - name: Set borgbackup_ssh_host
-      ansible.builtin.set_fact:
-        borgbackup_ssh_host: "{{ borgbackup_borgbase_repo }}.repo.borgbase.com"
-      when: borgbackup_borgbase_repo is defined
+      repositories:
+        - path: {{ borg_repo }}
 
-    - name: Ensure borgmatic is installed
-      ansible.builtin.apt:
-        name: borgmatic
-        update_cache: false
-        state: present
+      encryption_passphrase: "{{ borg_password }}"
+      compression: {{ borg_compression }}
+      retries: {{ borg_retries }}
+      retry_wait: {{ borg_retry_wait }}
+      ssh_command: ssh -i {{ borg_ssh_key_path }} -o StrictHostKeyChecking=accept-new
 
-    - name: Create borgmatic config directory
-      ansible.builtin.file:
-        path: /etc/borgmatic
-        state: directory
-        owner: root
-        group: root
-        mode: "0755"
+      keep_within: {{ borg_retention.keep_within }}
+      keep_daily: {{ borg_retention.keep_daily }}
+      keep_weekly: {{ borg_retention.keep_weekly }}
+      keep_monthly: {{ borg_retention.keep_monthly }}
+      keep_yearly: {{ borg_retention.keep_yearly }}
 
-    - name: Write borgmatic config
-      ansible.builtin.copy:
-        dest: /etc/borgmatic/config.yaml
-        owner: root
-        group: root
-        mode: "0600"
-        content: |
-          location:
-            source_directories:
-          {% for path in borg_source_directories %}
-            - {{ path }}
-          {% endfor %}
+      before_backup:
+        - echo "Starting backup"
+      {% for cmd in borg_db_dump_commands %}
+        - {{ cmd }}
+      {% endfor %}
+      {% if borg_ping_url %}
 
-          repositories: ['{{ borg_repo }}']
+      healthchecks:
+        ping_url: {{ borg_ping_url }}
+        send_logs: true
+        states: {{ borg_ping_states }}
+      {% endif %}
+  notify: Validate borgmatic
 
-          storage:
-            encryption_passphrase: "{{ borg_password }}"
-            compression: {{ borg_compression }}
-            retries: {{ borg_retries }}
-            retry_wait: {{ borg_retry_wait }}
-            ssh_command: ssh -i {{ borg_ssh_key_path }}
+- name: Enable borgmatic systemd timer
+  ansible.builtin.systemd:
+    name: borgmatic.timer
+    enabled: true
+    state: started
+    daemon_reload: true
 
-          retention:
-          {% for key, value in borg_retention.items() %}
-            {{ key }}: {{ value }}
-          {% endfor %}
-
-          {% if borg_ping_url %}
-          hooks:
-            healthchecks:
-              ping_url: {{ borg_ping_url }}
-              send_logs: true
-              ping_body_limit: 100000
-              states: {{ borg_ping_states }}
-          {% endif %}
-
-    - name: Enable borgmatic systemd timer
-      ansible.builtin.systemd:
-        name: borgmatic.timer
-        enabled: true
-        state: started
-
-  when: borg_should_run
-  tags: [borg]
+- name: Verify borgmatic timer is active
+  ansible.builtin.command: systemctl is-active borgmatic.timer
+  register: borgmatic_timer
+  changed_when: false
+  failed_when: borgmatic_timer.stdout != "active"

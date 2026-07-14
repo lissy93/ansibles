@@ -1,4 +1,4 @@
-.PHONY: help first-apply apply setup requirements lint install-ansible install-lint check-env $(ROLE_TAGS) $(PLAYBOOKS)
+.PHONY: help first-apply apply setup requirements lint install-ansible install-lint check-env encrypt decrypt $(ROLE_TAGS) $(PLAYBOOKS)
 
 #––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 # Variables
@@ -24,7 +24,13 @@ ROLE_TAGS = docker \
 	cockpit \
 	borg \
 	maldet \
-	lynis
+	lynis \
+	system-tuning \
+	node_exporter \
+	prometheus \
+	loki \
+	promtail \
+	grafana
 
 # List all available playbooks (from playbooks directory)
 PLAYBOOKS = $(shell find playbooks -name '*.yml' -type f | sed 's|playbooks/||;s|\.yml||')
@@ -35,6 +41,8 @@ help:
 		@echo	"  make setup         # install pip deps, galaxy requirements, ansible-lint"
 		@echo "  make requirements  # install ansible-galaxy roles from requirements.yml"
 		@echo "  make lint          # run ansible-lint on your playbooks"
+		@echo "  make decrypt       # sops-decrypt inventory secrets (after a clone)"
+		@echo "  make encrypt       # sops-encrypt inventory secrets (before a commit)"
 		@echo "  make first-apply   # Initial bootstrap (root-only, before any users exist)"
 		@echo "  make apply         # run all roles"
 		@echo "  make <role>        # run one tagged role"
@@ -109,3 +117,22 @@ $(ROLE_TAGS):
 # E.g. `make monitoring` → ansible-playbook ./playbooks/monitoring.yml
 $(PLAYBOOKS):
 	$(ANSIBLE_PLAYBOOK) ./playbooks/$(@).yml $(BECOME)
+
+#------------------------------------------------------------------------------
+# Secrets (SOPS + age). Key at ~/.config/sops/age/keys.txt
+encrypt:
+	@command -v sops >/dev/null || { echo "sops not found"; exit 1; }
+	@for f in inventories/*/host_vars/*.yml; do \
+		case "$$f" in *.sops.yml) continue;; esac; \
+		[ -e "$$f" ] || continue; \
+		echo "Encrypting $$f"; \
+		sops --encrypt --input-type yaml --output-type yaml "$$f" > "$${f%.yml}.sops.yml"; \
+	done
+
+decrypt:
+	@command -v sops >/dev/null || { echo "sops not found"; exit 1; }
+	@for f in inventories/*/host_vars/*.sops.yml; do \
+		[ -e "$$f" ] || continue; \
+		echo "Decrypting $$f"; \
+		sops --decrypt --input-type yaml --output-type yaml "$$f" > "$${f%.sops.yml}.yml"; \
+	done

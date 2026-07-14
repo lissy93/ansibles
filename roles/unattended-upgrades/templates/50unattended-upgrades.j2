@@ -1,0 +1,31 @@
+Unattended-Upgrade::Allowed-Origins {
+{% for origin in unattended_upgrades_origins %}
+    "{{ origin }}";
+{% endfor %}
+};
+
+Unattended-Upgrade::Package-Blacklist {
+{% for pkg in unattended_upgrades_blacklist %}
+    "{{ pkg }}";
+{% endfor %}
+};
+
+Unattended-Upgrade::DevRelease "false";
+Unattended-Upgrade::AutoFixInterruptedDpkg "true";
+Unattended-Upgrade::MinimalSteps "true";
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-New-Unused-Dependencies "{{ unattended_upgrades_autoremove | ternary('true', 'false') }}";
+Unattended-Upgrade::Remove-Unused-Dependencies "{{ unattended_upgrades_autoremove | ternary('true', 'false') }}";
+Unattended-Upgrade::Automatic-Reboot "{{ unattended_upgrades_auto_reboot | ternary('true', 'false') }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ unattended_upgrades_auto_reboot_time }}";
+{% if unattended_upgrades_mail %}
+Unattended-Upgrade::Mail "{{ unattended_upgrades_mail }}";
+Unattended-Upgrade::MailReport "{{ unattended_upgrades_mail_on_error | ternary('only-on-error', 'on-change') }}";
+{% endif %}
+{% if unattended_upgrades_syslog_enable %}
+Unattended-Upgrade::SyslogEnable "true";
+Unattended-Upgrade::SyslogFacility "{{ unattended_upgrades_syslog_facility }}";
+{% endif %}
+{% if unattended_upgrades_download_limit > 0 %}
+Acquire::http::Dl-Limit "{{ unattended_upgrades_download_limit }}";
+{% endif %}

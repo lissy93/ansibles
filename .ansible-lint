@@ -1,0 +1,60 @@
+---
+# Ansible-lint configuration
+#
+# This configuration follows Ansible best practices while being pragmatic
+# about warnings that don't affect functionality or security.
+
+# Exclude paths
+exclude_paths:
+  - roles/geerlingguy.docker/  # Third-party role
+  - roles/docker/molecule/     # Vendored test scaffolding (third-party)
+  - roles/geerlingguy.pip/     # Third-party role
+  - .cache/
+  - .git/
+
+# Enable checking of these rules (default: all rules are checked)
+enable_list:
+  - fqcn  # Require fully qualified collection names
+  - name  # Require names for tasks and plays
+  - yaml  # YAML syntax and formatting
+
+# Skip specific rules that are overly strict or don't apply
+skip_list:
+  - name[play]  # Skip for import_playbook in all.yml (they reference named playbooks)
+  - command-instead-of-module  # We intentionally use command for verification tasks
+  - risky-file-permissions  # We explicitly set permissions where needed
+  - no-handler  # Some restart operations are intentional in tasks
+  - key-order[task]  # Task key order is flexible
+
+# Warnings (non-blocking)
+warn_list:
+  - jinja[spacing]  # Warn about jinja spacing but don't fail
+  - yaml[line-length]  # Warn about long lines but don't fail
+  - yaml[empty-lines]  # Warn about extra blank lines but don't fail
+  - var-naming[no-role-prefix]  # Warn about variable naming for backward compat
+
+# Offline mode (don't check for updates)
+offline: false
+
+# Use default rules path
+# rulesdir:
+#   - ~/.ansible-lint/custom-rules/
+
+# Set custom kinds for specific file types
+kinds:
+  - tasks: "**/tasks/*.yml"
+  - handlers: "**/handlers/*.yml"
+  - vars: "**/vars/*.yml"
+  - defaults: "**/defaults/*.yml"
+  - meta: "**/meta/*.yml"
+  - playbook: "**/playbooks/*.yml"
+
+# Mock modules or roles to avoid warnings about missing dependencies
+mock_modules: []
+mock_roles: []
+
+# Exclude deprecated warnings we've intentionally kept for compatibility
+# skip_ansible_lint: []
+
+# Progressive mode - only fail on new violations
+# progressive: false

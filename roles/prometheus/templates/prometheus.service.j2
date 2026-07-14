@@ -10,8 +10,14 @@ Type=simple
 ExecStart=/usr/local/bin/prometheus \
   --config.file={{ prometheus_config_dir }}/prometheus.yml \
   --storage.tsdb.path={{ prometheus_data_dir }} \
+  --storage.tsdb.retention.time={{ prometheus_retention_time }} \
+  --storage.tsdb.retention.size={{ prometheus_retention_size }} \
   --web.listen-address={{ prometheus_listen_address }}:{{ prometheus_port }}
 Restart=on-failure
+RestartSec=10
+MemoryMax=128M
+MemoryHigh=96M
+CPUQuota=50%
 
 [Install]
 WantedBy=multi-user.target

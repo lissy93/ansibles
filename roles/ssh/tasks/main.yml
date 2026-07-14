@@ -59,7 +59,6 @@
     - {key: 'MACs', value: 'hmac-sha2-256,hmac-sha2-512' }
   notify: Restart SSH
   when: not ssh_lockdown | default(false)
-  changed_when: true
 
 - name: Disable root login
   ansible.builtin.lineinfile:
@@ -74,20 +73,23 @@
     - {regexp: '^ChallengeResponseAuthentication', line: 'ChallengeResponseAuthentication no'}
   when: user_ready | default(false) and not ssh_lockdown | default(false)
   notify: Restart SSH
-  changed_when: true
   tags:
     - lockdown
 
 
-- name: Update SSH port
+- name: Lockdown SSH (port, disable root, disable password)
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
-    regexp: '^#?\s*PasswordAuthentication\s+.*'
-    line: 'PasswordAuthentication no'
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
     validate: 'sshd -T -f %s'
   loop:
-    - { regexp: '^Port', line: 'Port {{ ssh_port }}' }
+    - { regexp: '^#?\s*Port\s+.*', line: 'Port {{ ssh_port }}' }
+    - { regexp: '^#?\s*PermitRootLogin\s+.*', line: 'PermitRootLogin no' }
+    - { regexp: '^#?\s*PasswordAuthentication\s+.*', line: 'PasswordAuthentication no' }
+    - { regexp: '^#?\s*ChallengeResponseAuthentication\s+.*', line: 'ChallengeResponseAuthentication no' }
   when: ssh_lockdown | default(false)
+  notify: Restart SSH
   tags:
     - lockdown
 

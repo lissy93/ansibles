@@ -30,7 +30,7 @@
 
 - name: Deploy logrotate config for each item
   ansible.builtin.template:
-    src: item.j2
+    src: logrotate_item.j2
     dest: "{{ logrotate_config_dir }}/{{ item.name }}"
     owner: root
     group: root

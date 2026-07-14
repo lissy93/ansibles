@@ -1,0 +1,55 @@
+---
+# Swap configuration
+swap_enabled: true
+swap_file_path: /swapfile
+swap_file_size: "{{ (ansible_memtotal_mb * 1) | int }}M"  # 1x RAM by default
+swap_swappiness: 10
+
+# Sysctl tuning for stability
+sysctl_settings:
+  vm.panic_on_oom: 0
+  vm.swappiness: "{{ swap_swappiness }}"
+  vm.overcommit_memory: 0
+  vm.overcommit_ratio: 80
+  vm.vfs_cache_pressure: 200
+  vm.min_free_kbytes: 65536
+
+# Kernel security hardening
+sysctl_security_settings:
+  # Prevent IP spoofing
+  net.ipv4.conf.all.rp_filter: 1
+  net.ipv4.conf.default.rp_filter: 1
+  # Ignore ICMP redirects (prevent MITM)
+  net.ipv4.conf.all.accept_redirects: 0
+  net.ipv4.conf.default.accept_redirects: 0
+  net.ipv6.conf.all.accept_redirects: 0
+  # Don't send ICMP redirects (we're not a router)
+  net.ipv4.conf.all.send_redirects: 0
+  net.ipv4.conf.default.send_redirects: 0
+  # Ignore source-routed packets
+  net.ipv4.conf.all.accept_source_route: 0
+  net.ipv6.conf.all.accept_source_route: 0
+  # Log suspicious packets
+  net.ipv4.conf.all.log_martians: 1
+  # SYN flood protection
+  net.ipv4.tcp_syncookies: 1
+  net.ipv4.tcp_max_syn_backlog: 2048
+  net.ipv4.tcp_synack_retries: 2
+  # Disable IPv6 router advertisements
+  net.ipv6.conf.all.accept_ra: 0
+  net.ipv6.conf.default.accept_ra: 0
+  # Restrict dmesg access
+  kernel.dmesg_restrict: 1
+  # Restrict kernel pointer exposure
+  kernel.kptr_restrict: 2
+  # Harden BPF JIT
+  net.core.bpf_jit_harden: 2
+
+# Earlyoom - kills runaway processes before the kernel OOM killer freezes the system
+earlyoom_enabled: true
+earlyoom_mem_threshold: 5   # Trigger at 5% free memory
+earlyoom_swap_threshold: 10 # Trigger at 10% free swap
+
+# Journald disk caps
+journald_max_use: 200M
+journald_runtime_max_use: 50M

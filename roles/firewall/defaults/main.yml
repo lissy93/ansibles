@@ -23,6 +23,9 @@ firewall_denied_tcp_ports: []
 # which UDP ports to explicitly deny
 firewall_denied_udp_ports: []
 
+# ports to forcibly remove allow rules for (cleanup stale manual rules)
+firewall_cleanup_tcp_ports: []
+
 # extra ports to remove when lockdown is true
 firewall_lockdown: false
 

@@ -1,0 +1,19 @@
+---
+promtail_enabled: true
+promtail_version: "3.5.0"
+promtail_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+promtail_download_url: >-
+  https://github.com/grafana/loki/releases/download/v{{ promtail_version }}/promtail-linux-{{ promtail_arch }}.zip
+promtail_binary_path: /usr/local/bin/promtail
+promtail_config_dir: /etc/promtail
+promtail_positions_path: /var/lib/promtail/positions.yaml
+
+loki_push_url: "http://localhost:{{ loki_http_port }}/loki/api/v1/push"
+
+promtail_log_paths:
+  - name: syslog
+    path: /var/log/syslog
+  - name: auth
+    path: /var/log/auth.log
+  - name: kern
+    path: /var/log/kern.log

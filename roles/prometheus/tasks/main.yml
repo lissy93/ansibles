@@ -29,11 +29,18 @@
     - "{{ prometheus_config_dir }}"
     - "{{ prometheus_data_dir }}"
 
+- name: Check current Prometheus version
+  ansible.builtin.command: /usr/local/bin/prometheus --version
+  register: prometheus_current_version
+  changed_when: false
+  failed_when: false
+
 - name: Download Prometheus {{ prometheus_version }}
   ansible.builtin.get_url:
     url: "{{ prometheus_download_url }}"
     dest: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
     mode: "0644"
+  when: prometheus_version not in (prometheus_current_version.stdout | default(''))
   retries: 3
   delay: 5
   register: dl
@@ -42,9 +49,10 @@
 - name: Extract Prometheus binaries
   ansible.builtin.unarchive:
     src: "/tmp/prometheus-{{ prometheus_version }}.tar.gz"
-    dest: "{{ prometheus_install_dir }}"    # ← now using the versioned dir
+    dest: "{{ prometheus_install_dir }}"
     remote_src: true
     extra_opts: ["--strip-components=1"]
+  when: prometheus_version not in (prometheus_current_version.stdout | default(''))
   notify: Link Prometheus binaries
 
 - name: Deploy prometheus.yml

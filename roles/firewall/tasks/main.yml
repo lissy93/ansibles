@@ -66,6 +66,16 @@
     - ssh_port is defined
     - ssh_port | int != 22
 
+- name: Ensure denied TCP ports have no stale allow rules
+  community.general.ufw:
+    rule: allow
+    port: "{{ item }}"
+    proto: tcp
+    delete: true
+  loop: "{{ firewall_cleanup_tcp_ports }}"
+  when: firewall_cleanup_tcp_ports is defined and firewall_cleanup_tcp_ports | length > 0
+  failed_when: false
+
 - name: Enable ufw
   community.general.ufw:
     state: enabled

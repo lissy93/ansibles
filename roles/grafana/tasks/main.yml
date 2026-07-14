@@ -37,10 +37,10 @@
 - name: Download and install Grafana GPG key
   ansible.builtin.shell: |
     set -o pipefail
+    rm -f /etc/apt/keyrings/grafana-archive-keyring.gpg
     curl -fsSL {{ grafana_repo_key_url }} | gpg --dearmor -o /etc/apt/keyrings/grafana-archive-keyring.gpg
     chmod 644 /etc/apt/keyrings/grafana-archive-keyring.gpg
   args:
-    creates: /etc/apt/keyrings/grafana-archive-keyring.gpg
     executable: /bin/bash
   changed_when: false
 
@@ -67,13 +67,65 @@
   notify: Restart Grafana
   when: grafana_ini | length > 0
 
-- name: "Provision Prometheus & Loki in Grafana"
-  ansible.builtin.copy:
-    src: provisioning/datasources/
-    dest: /etc/grafana/provisioning/datasources/
+- name: "Provision Prometheus datasource"
+  ansible.builtin.template:
+    src: provisioning/datasources/prometheus.yml.j2
+    dest: /etc/grafana/provisioning/datasources/prometheus.yml
     owner: root
     group: root
     mode: "0644"
+  notify: Restart Grafana
+
+- name: "Provision Loki datasource"
+  ansible.builtin.template:
+    src: provisioning/datasources/loki.yml.j2
+    dest: /etc/grafana/provisioning/datasources/loki.yml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: "Provision dashboard provider config"
+  ansible.builtin.copy:
+    src: provisioning/dashboards/
+    dest: /etc/grafana/provisioning/dashboards/
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: "Create dashboards directory"
+  ansible.builtin.file:
+    path: /var/lib/grafana/dashboards
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: "0755"
+
+- name: "Deploy dashboards"
+  ansible.builtin.copy:
+    src: dashboards/
+    dest: /var/lib/grafana/dashboards/
+    owner: grafana
+    group: grafana
+    mode: "0644"
+  notify: Restart Grafana
+
+- name: Create Grafana systemd override directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/grafana-server.service.d
+    state: directory
+    mode: "0755"
+
+- name: Set Grafana resource limits
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/grafana-server.service.d/limits.conf
+    mode: "0644"
+    content: |
+      [Service]
+      MemoryMax=192M
+      MemoryHigh=160M
+      CPUQuota=50%
   notify: Restart Grafana
 
 - name: Enable and start Grafana service
@@ -81,6 +133,7 @@
     name: "{{ grafana_service }}"
     state: started
     enabled: true
+    daemon_reload: true
 
 - name: Wait for Grafana HTTP to be available
   ansible.builtin.uri:

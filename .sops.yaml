@@ -1,0 +1,5 @@
+# Which age key encrypts which files.
+# The private key lives at ~/.config/sops/age/keys.txt on the control node.
+creation_rules:
+  - path_regex: host_vars/.*\.yml$
+    age: age1p2kl2nfyf72rceldz948vkq4znezppt6dya3nthtya9kq96glpysmun7cn

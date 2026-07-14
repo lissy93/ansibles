@@ -3,3 +3,14 @@ monit_bind_address: "0.0.0.0"
 monit_user: "boss"
 monit_password: "changeme420"
 monit_public: false
+
+# Filesystem capacity alerts
+monit_fs_checks:
+  - name: rootfs
+    path: /
+    usage_percent: 85
+
+# Alert when a container restarts more than the threshold
+# within one check window (5 monit cycles, roughly 10 minutes)
+monit_docker_flap_check: true
+monit_docker_flap_threshold: 3

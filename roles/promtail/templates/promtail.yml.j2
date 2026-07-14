@@ -1,0 +1,23 @@
+server:
+  http_listen_port: 0
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: {{ promtail_positions_path }}
+
+clients:
+  - url: {{ loki_push_url }}
+    batchwait: 5s
+    batchsize: 102400
+
+scrape_configs:
+{% for log in promtail_log_paths %}
+  - job_name: {{ log.name }}
+    static_configs:
+      - targets: ['localhost']
+        labels:
+          job: {{ log.name }}
+          host: {{ ansible_hostname }}
+          __path__: {{ log.path }}
+{% endfor %}

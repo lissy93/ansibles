@@ -5,6 +5,10 @@
   become: true
   tags: access
 
+  pre_tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      tags: always
   tasks:
     - name: Configure Tailscale VPN
       block:
@@ -23,5 +27,7 @@
     - name: Include Cockpit role
       ansible.builtin.include_role:
         name: cockpit
+        apply:
+          tags: [cockpit]
       when: cockpit_enabled | default(true)
       tags: [cockpit]

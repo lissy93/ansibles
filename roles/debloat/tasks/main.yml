@@ -1,0 +1,16 @@
+---
+- name: Stop and disable unneeded services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    enabled: false
+  loop: "{{ debloat_disable_units }}"
+  failed_when: false
+
+- name: Mask services that DBus would otherwise re-activate
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+    masked: true
+  loop: "{{ debloat_mask_units }}"
+  failed_when: false

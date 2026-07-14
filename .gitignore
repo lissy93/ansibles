@@ -7,13 +7,12 @@
 *.tmp
 .ansible
 
-# Ignore sensitive or dynamic inventory files
-inventories/*
-inventory/*.ini
-inventory/*.yml
-inventory/*.yaml
-inventory/*.json
-!inventory/sample_inventory.yml
+# Inventory: commit structure and sops-encrypted secrets, never plaintext host_vars
+inventories/*/host_vars/*.yml
+!inventories/*/host_vars/*.sops.yml
+
+# Personal server notes, contains the origin IP and host internals
+external-fixes.txt
 
 # Logs
 logs/*

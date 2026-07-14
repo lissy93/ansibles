@@ -9,6 +9,8 @@ timezone_ntp_servers: []         # Custom NTP servers, optional
 timezone_sync_time_now: true     # Whether to sync time immediately after setup
 
 timezone_ntp_service_chrony: chronyd
+timezone_ntp_service_ntp: ntpd
+timezone_ntp_service_timesyncd: systemd-timesyncd
 
 # Legacy variable names for backward compatibility
 ntp_enabled: "{{ timezone_ntp_enabled }}"
@@ -17,3 +19,5 @@ ntp_package: "{{ timezone_ntp_package }}"
 ntp_servers: "{{ timezone_ntp_servers }}"
 sync_time_now: "{{ timezone_sync_time_now }}"
 ntp_service_chrony: "{{ timezone_ntp_service_chrony }}"
+ntp_service_ntp: "{{ timezone_ntp_service_ntp }}"
+ntp_service_timesyncd: "{{ timezone_ntp_service_timesyncd }}"

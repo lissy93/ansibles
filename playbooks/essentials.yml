@@ -1,30 +1,21 @@
 # Basic server setup, to always be run on everything
-# Sets up dep repos, users, ssh, time, host, firewall, mail, etc
-
-# - name: Essentials
-#   hosts: all
-#   become: true
-#   tags: essentials
-#   roles:
-#     - role: installs         # apt, packages, updates…
-#     - role: users            # user accounts
-#     - role: directories      # server structure
-#     - role: ssh              # SSH hardening
-#     - role: timezone         # timezone & NTP
-#     - role: hostname         # hostname, /etc/hosts
-#     - role: firewall         # UFW
-#     # - role: mail             # postfix
-
+# Sets up packages, users, ssh, time, host, firewall, system tuning
 
 - name: 'Essentials: General system configuration'
   hosts: all
   become: true
   tags: essentials
 
+  pre_tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      tags: always
   tasks:
     - name: Include installs role
       ansible.builtin.include_role:
         name: installs
+        apply:
+          tags: [installs]
       when: installs_enabled | default(true)
       tags: [installs]
       ignore_errors: true  # noqa ignore-errors
@@ -32,6 +23,8 @@
     - name: Include users role
       ansible.builtin.include_role:
         name: users
+        apply:
+          tags: [users]
       when: users_enabled | default(true)
       tags: [users]
       ignore_errors: true  # noqa ignore-errors
@@ -39,6 +32,8 @@
     - name: Include directories role
       ansible.builtin.include_role:
         name: directories
+        apply:
+          tags: [directories]
       when: directories_enabled | default(true)
       tags: [directories]
       ignore_errors: true  # noqa ignore-errors
@@ -46,6 +41,8 @@
     - name: Include timezone role
       ansible.builtin.include_role:
         name: timezone
+        apply:
+          tags: [timezone]
       when: timezone_enabled | default(true)
       tags: [timezone]
       ignore_errors: true  # noqa ignore-errors
@@ -53,6 +50,8 @@
     - name: Include hostname role
       ansible.builtin.include_role:
         name: hostname
+        apply:
+          tags: [hostname]
       when: hostname_enabled | default(true)
       tags: [hostname]
       ignore_errors: true  # noqa ignore-errors
@@ -60,14 +59,38 @@
     - name: Include firewall role
       ansible.builtin.include_role:
         name: firewall
+        apply:
+          tags: [firewall]
       when: firewall_enabled | default(true)
       tags: [firewall]
       ignore_errors: true  # noqa ignore-errors
 
-    # - ansible.builtin.include_role:
-    #     name: mail
-    #   when: mail_enabled | default(false)
-    #   tags: [ mail ]
+- name: 'Essentials: System tuning (swap, OOM protection, kernel params)'
+  hosts: all
+  become: true
+  tags: essentials
+  pre_tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      tags: always
+  tasks:
+    - name: Include system-tuning role
+      ansible.builtin.include_role:
+        name: system-tuning
+        apply:
+          tags: [system-tuning]
+      when: system_tuning_enabled | default(true)
+      tags: [system-tuning]
+      ignore_errors: true  # noqa ignore-errors
+
+    - name: Include debloat role
+      ansible.builtin.include_role:
+        name: debloat
+        apply:
+          tags: [debloat]
+      when: debloat_enabled | default(true)
+      tags: [debloat]
+      ignore_errors: true  # noqa ignore-errors
 
 - name: 'Essentials: SSH config - pre-lockdown'
   hosts: all

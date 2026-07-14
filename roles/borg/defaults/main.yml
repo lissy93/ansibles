@@ -1,15 +1,14 @@
+---
 borg_enabled: true
 
-# Borg SSH
-borg_ssh_key_path: "/home/{{ ansible_user }}/.ssh/borgmatic_ed25519"
-borg_borgbase_key_name: "{{ ansible_user }}@{{ ansible_hostname }}"
-borg_borgbase_apikey: ''
-borg_user: ''
+# SSH key used to authenticate with the backup repo
+borg_ssh_key_path: "/home/{{ borg_user | default(new_user) }}/.ssh/id_ed25519"
 
 # Repo & backup target
 borg_repo: ''   # e.g. xyz420@xyz420.repo.borgbase.com:repo
 borg_password: ''
 borg_name: ''
+borg_user: ''
 
 # Backup sources
 borg_source_directories:
@@ -17,6 +16,12 @@ borg_source_directories:
   - /etc
   - /var/lib
   - /srv
+
+# Rebuildable paths that would bloat the repo
+borg_exclude_patterns:
+  - /var/lib/docker
+  - /var/lib/containerd
+  - '*.log'
 
 # Retention
 borg_retention:
@@ -31,6 +36,9 @@ borg_compression: lz4
 borg_retries: 3
 borg_retry_wait: 60
 
-# Healthchecks
+# Healthchecks (empty = disabled)
 borg_ping_url: ''
 borg_ping_states: [start, finish, fail]
+
+# Commands run before each backup, e.g. database dumps (set per host)
+borg_db_dump_commands: []

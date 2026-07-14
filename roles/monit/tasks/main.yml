@@ -16,6 +16,59 @@
 
   notify: Restart monit
 
+- name: Configure filesystem capacity checks
+  ansible.builtin.copy:
+    dest: /etc/monit/conf-enabled/filesystems
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      {% for fs in monit_fs_checks %}
+      check filesystem {{ fs.name }} with path {{ fs.path }}
+        if space usage > {{ fs.usage_percent }}% then alert
+      {% endfor %}
+  when: monit_fs_checks | length > 0
+  notify: Restart monit
+
+- name: Deploy docker flap-detection script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/check-docker-flap
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/sh
+      # Exit 1 if any container restarted more than THRESH times since last run
+      STATE=/var/tmp/docker-restart-counts
+      THRESH={{ monit_docker_flap_threshold }}
+      NEW=$(docker ps -a --format '{{ '{{' }}.Names{{ '}}' }}' | xargs -r docker inspect -f '{{ '{{' }}.Name{{ '}}' }} {{ '{{' }}.RestartCount{{ '}}' }}' 2>/dev/null | tr -d '/')
+      OLD=$(cat "$STATE" 2>/dev/null || true)
+      printf '%s\n' "$NEW" > "$STATE"
+      FLAP=$(printf '%s\n' "$NEW" | while read -r name count; do
+        old=$(printf '%s\n' "$OLD" | awk -v n="$name" '$1==n{print $2}')
+        [ -n "$old" ] && [ "$((count - old))" -gt "$THRESH" ] && echo "$name(+$((count - old)))"
+      done)
+      if [ -n "$FLAP" ]; then
+        echo "Containers restart-looping: $FLAP"
+        exit 1
+      fi
+      echo "OK"
+  when: monit_docker_flap_check | bool
+  notify: Restart monit
+
+- name: Configure docker flap-detection check
+  ansible.builtin.copy:
+    dest: /etc/monit/conf-enabled/docker-flap
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      check program docker-flap with path /usr/local/bin/check-docker-flap
+        every 5 cycles
+        if status != 0 then alert
+  when: monit_docker_flap_check | bool
+  notify: Restart monit
+
 - name: Validate monit config
   ansible.builtin.command: monit -t
   changed_when: false

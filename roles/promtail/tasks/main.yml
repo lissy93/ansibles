@@ -1,0 +1,101 @@
+---
+- name: Skip promtail if disabled
+  ansible.builtin.meta: end_host
+  when: not (promtail_enabled | bool)
+
+- name: Create promtail directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ promtail_config_dir }}"
+    - "{{ promtail_positions_path | dirname }}"
+
+- name: Check current promtail version
+  ansible.builtin.command: "{{ promtail_binary_path }} --version"
+  register: promtail_current_version
+  changed_when: false
+  failed_when: false
+
+- name: Download promtail {{ promtail_version }}
+  ansible.builtin.get_url:
+    url: "{{ promtail_download_url }}"
+    dest: /tmp/promtail.zip
+    mode: "0644"
+  when: promtail_version not in (promtail_current_version.stdout | default(''))
+  retries: 3
+  delay: 5
+
+- name: Extract promtail binary
+  ansible.builtin.unarchive:
+    src: /tmp/promtail.zip
+    dest: /tmp/
+    remote_src: true
+  when: promtail_version not in (promtail_current_version.stdout | default(''))
+
+- name: Install promtail binary
+  ansible.builtin.copy:
+    src: "/tmp/promtail-linux-{{ promtail_arch }}"
+    dest: "{{ promtail_binary_path }}"
+    remote_src: true
+    mode: "0755"
+  when: promtail_version not in (promtail_current_version.stdout | default(''))
+  notify: Restart promtail
+
+- name: Deploy promtail config
+  ansible.builtin.template:
+    src: promtail.yml.j2
+    dest: "{{ promtail_config_dir }}/config.yml"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart promtail
+
+- name: Deploy promtail systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/promtail.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Promtail Log Shipper
+      After=network.target loki.service
+      Wants=loki.service
+
+      [Service]
+      ExecStart={{ promtail_binary_path }} -config.file={{ promtail_config_dir }}/config.yml
+      Restart=on-failure
+      RestartSec=10
+      MemoryMax=96M
+      MemoryHigh=80M
+      CPUQuota=25%
+
+      [Install]
+      WantedBy=multi-user.target
+  notify:
+    - Reload systemd
+    - Restart promtail
+
+- name: Enable and start promtail
+  ansible.builtin.systemd:
+    name: promtail
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Verify promtail is running
+  ansible.builtin.command: systemctl is-active promtail
+  register: promtail_status
+  changed_when: false
+  failed_when: promtail_status.stdout != "active"
+
+- name: Clean up temp files
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/promtail.zip
+    - "/tmp/promtail-linux-{{ promtail_arch }}"
+  changed_when: false

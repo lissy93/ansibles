@@ -5,9 +5,12 @@ prometheus_enabled: true
 # which version of Prometheus to install
 prometheus_version: "2.46.0"
 
+# architecture detection
+prometheus_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
 # download URL for the official Prometheus release tarball
 prometheus_download_url: >-
-  https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-amd64.tar.gz
+  https://github.com/prometheus/prometheus/releases/download/v{{ prometheus_version }}/prometheus-{{ prometheus_version }}.linux-{{ prometheus_arch }}.tar.gz
 
 # where to install Prometheus
 prometheus_install_dir: "/opt/prometheus-{{ prometheus_version }}"
@@ -23,13 +26,11 @@ prometheus_user: prometheus
 prometheus_group: prometheus
 
 # minimal scrape interval
-prometheus_global_scrape_interval: "15s"
+prometheus_global_scrape_interval: "30s"
 
-# scrape jobs
-# prometheus_scrape_configs:
-#   - job_name: prometheus
-#     static_configs:
-#       - targets: ["localhost:9091"]
+# data retention
+prometheus_retention_time: "7d"
+prometheus_retention_size: "500MB"
 
 prometheus_listen_address: "0.0.0.0"
 prometheus_port: 9091
@@ -42,27 +43,3 @@ prometheus_scrape_configs:
   - job_name: "node_exporter"
     static_configs:
       - targets: ["localhost:{{ node_exporter_port }}"]
-
-  - job_name: "cadvisor"
-    static_configs:
-      - targets: ["localhost:{{ cadvisor_port }}"]
-
-  - job_name: "blackbox_http"
-    metrics_path: /probe
-    params:
-      module: ["http_2xx"]
-    static_configs:
-      - targets:
-          - "http://localhost:{{ ssh_port }}"
-          - "http://localhost:{{ prometheus_port }}"
-    relabel_configs:
-      - source_labels: ["__address__"]
-        target_label: __param_target
-      - source_labels: ["__param_target"]
-        target_label: instance
-      - target_label: "__address__"
-        replacement: "localhost:9115"
-
-  - job_name: "alertmanager"
-    static_configs:
-      - targets: ["localhost:{{ alertmanager_port }}"]

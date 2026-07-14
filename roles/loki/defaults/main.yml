@@ -1,8 +1,13 @@
+---
 loki_enabled: true
-loki_url: "https://github.com/grafana/loki/releases/download/v3.5.0/loki-linux-amd64.zip"
+loki_version: "3.5.0"
+loki_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+loki_url: "https://github.com/grafana/loki/releases/download/v{{ loki_version }}/loki-linux-{{ loki_arch }}.zip"
 
 loki_http_port: 3100
 loki_grpc_port: 9095
+
+loki_retention_period: 168h  # 7 days
 
 loki_config: |
   auth_enabled: false
@@ -10,6 +15,7 @@ loki_config: |
   server:
     http_listen_port: {{ loki_http_port }}
     grpc_listen_port: {{ loki_grpc_port }}
+    log_level: warn
 
   common:
     path_prefix: /opt/loki
@@ -28,18 +34,31 @@ loki_config: |
           prefix: index_
           period: 24h
 
-  ruler:
-    storage:
-      type: local
-      local:
-        directory: /opt/loki/rules
-    rule_path: /opt/loki/rules-temp
-    alertmanager_url: http://localhost:9093
-    ring:
-      kvstore:
-        store: inmemory
-    enable_api: true
-
   limits_config:
     reject_old_samples: true
-    reject_old_samples_max_age: 168h
+    reject_old_samples_max_age: {{ loki_retention_period }}
+    retention_period: {{ loki_retention_period }}
+    max_query_series: 500
+    max_entries_limit_per_query: 5000
+    ingestion_rate_mb: 4
+    ingestion_burst_size_mb: 6
+
+  # Must stay below the service MemoryMax (192M)
+  ingester:
+    wal:
+      replay_memory_ceiling: 96MB
+
+  compactor:
+    working_directory: /opt/loki/compactor
+    compaction_interval: 10m
+    retention_enabled: true
+    retention_delete_delay: 2h
+    retention_delete_worker_count: 150
+    delete_request_store: filesystem
+
+  query_range:
+    results_cache:
+      cache:
+        embedded_cache:
+          enabled: true
+          max_size_mb: 50

@@ -9,11 +9,21 @@
     system: true
     shell: /usr/sbin/nologin
 
+# Older releases print their version to stderr
+- name: Check current node_exporter version
+  ansible.builtin.command: /usr/local/bin/node_exporter --version
+  register: node_exporter_current_version
+  changed_when: false
+  failed_when: false
+
 - name: Fetch node_exporter
   ansible.builtin.get_url:
     url: "{{ node_exporter_url }}"
     dest: "/tmp/node_exporter-{{ node_exporter_version }}.tar.gz"
     mode: "644"
+  when: node_exporter_version not in ((node_exporter_current_version.stdout | default('')) + (node_exporter_current_version.stderr | default('')))
+  retries: 3
+  delay: 5
 
 - name: Unpack node_exporter
   ansible.builtin.unarchive:
@@ -21,6 +31,7 @@
     dest: "{{ node_exporter_install_dir }}"
     remote_src: true
     extra_opts: ["--strip-components=1"]
+  when: node_exporter_version not in ((node_exporter_current_version.stdout | default('')) + (node_exporter_current_version.stderr | default('')))
 
 - name: Install node_exporter binary
   ansible.builtin.file:
@@ -41,10 +52,13 @@
       Group={{ node_exporter_group }}
       ExecStart=/usr/local/bin/node_exporter --web.listen-address=:{{ node_exporter_port }}
       Restart=on-failure
+      RestartSec=10
+      MemoryMax=32M
+      CPUQuota=25%
 
       [Install]
       WantedBy=multi-user.target
-  notify: reload systemd
+  notify: Reload systemd
 
 - name: Ensure node_exporter is running
   ansible.builtin.systemd:

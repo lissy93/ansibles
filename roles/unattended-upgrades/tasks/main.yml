@@ -1,0 +1,47 @@
+---
+- name: Skip unattended-upgrades if disabled
+  ansible.builtin.meta: end_host
+  when: not (unattended_upgrades_enabled | bool)
+
+- name: Install unattended-upgrades
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - apt-listchanges
+    state: present
+    update_cache: false
+
+- name: Deploy auto-upgrades config
+  ansible.builtin.template:
+    src: 20auto-upgrades.j2
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Deploy unattended-upgrades config
+  ansible.builtin.template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart unattended-upgrades
+
+- name: Enable unattended-upgrades timer
+  ansible.builtin.systemd:
+    name: apt-daily.timer
+    enabled: true
+    state: started
+
+- name: Enable unattended-upgrades install timer
+  ansible.builtin.systemd:
+    name: apt-daily-upgrade.timer
+    enabled: true
+    state: started
+
+- name: Verify unattended-upgrades service
+  ansible.builtin.command: systemctl is-active unattended-upgrades
+  register: uu_status
+  changed_when: false
+  failed_when: uu_status.stdout != "active"

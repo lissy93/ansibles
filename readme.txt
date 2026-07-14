@@ -81,7 +81,7 @@ STEP 1: SERVERS
 
 STEP 2: CONFIGURATION
 - Add variables to `inventories/group_vars/remote.yml` or `all.yml` (shared)
-- Best to put secrete variables in an Ansible vault (see instructions below)
+- Keep secret variables in a SOPS-encrypted host_vars file (see below)
 
 STEP 4: RUNNING
 - Use the commands in the Makefile to execute the playbooks.
@@ -149,10 +149,15 @@ ADDING VARIABLES 🗂️
 - Defaults are defined per-role in: ./roles/<role_name>/defaults/main.yml
 - But you can (and should) override in:  ./inventories/group_vars/all.yml
 - Or, set host-specific vars, in:  ./inventories/host_vars/<hostname>.yml
-- Secrets should be stored in a vault: ./inventories/group_vars/vault.yml
-  1. Create a vault: `ansible-vault create ./inventories/group_vars/vault.yml`
-  2. Edit the vault: `ansible-vault edit ./inventories/group_vars/vault.yml`
-  3. Use the vault by adding the `--ask-vault-pass` flag when running a playbook
+- Secrets live in the host's vars file and are encrypted with SOPS.
+  The plaintext host_vars/<host>.yml is gitignored, and the encrypted
+  host_vars/<host>.sops.yml is what we commit.
+  1. One-time: install sops and age, run
+       age-keygen -o ~/.config/sops/age/keys.txt
+     then put the public key it prints into .sops.yaml
+  2. After a clone:   make decrypt   (rebuilds the plaintext host_vars)
+  3. After editing:   make encrypt   (refreshes the .sops.yml to commit)
+  Back up that key file, it is the only way to decrypt.
 
 ================================================================================
 

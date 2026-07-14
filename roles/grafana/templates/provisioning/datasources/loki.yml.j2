@@ -1,0 +1,7 @@
+apiVersion: 1
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://localhost:{{ loki_http_port }}
+    version: 1

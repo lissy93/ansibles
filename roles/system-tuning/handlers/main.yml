@@ -1,0 +1,10 @@
+---
+- name: Restart earlyoom
+  ansible.builtin.service:
+    name: earlyoom
+    state: restarted
+
+- name: Restart journald
+  ansible.builtin.service:
+    name: systemd-journald
+    state: restarted

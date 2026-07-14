@@ -1,0 +1,15 @@
+---
+debloat_enabled: true
+
+# Services with no purpose on a headless VPS (missing units are skipped)
+debloat_disable_units:
+  - NetworkManager        # systemd-networkd manages the NICs
+  - ModemManager          # no modems
+  - wpa_supplicant        # no wifi
+  - multipathd            # no multipath storage
+  - multipathd.socket
+  - fwupd-refresh.timer   # no firmware to update
+
+# Masked, DBus keeps re-activating these
+debloat_mask_units:
+  - fwupd

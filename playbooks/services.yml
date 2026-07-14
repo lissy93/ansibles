@@ -4,10 +4,16 @@
   hosts: all
   become: true
   tags: services
+  pre_tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      tags: always
   tasks:
     - name: Include docker role
       ansible.builtin.include_role:
         name: docker
+        apply:
+          tags: [docker]
       when: docker_enabled | default(true)
       tags: [docker]
       ignore_errors: true  # noqa ignore-errors

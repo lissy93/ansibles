@@ -1,0 +1,124 @@
+
+
+####################
+# Users and Groups #
+####################
+new_user: alicia
+user_name: "{{ new_user }}"
+srv_owner: "{{ new_user }}"
+srv_group: "{{ new_user }}"
+docker_users:
+  - "{{ new_user }}"
+
+# SSH key path on control node (used by authorized_key lookup)
+user_ssh_key_path: "{{ lookup('env','HOME') + '/.ssh/id_ed25519.pub' }}"
+
+
+######################
+# Port configuration #
+######################
+
+# SSH port
+ssh_port: 2200
+
+# UI & access-tools
+cockpit_port: 9090
+grafana_port: 3000
+
+# Loki
+loki_http_port: 3100
+loki_grpc_port: 9095
+
+# Prometheus ecosystem
+prometheus_port: 9091
+node_exporter_port: 9100
+
+# Firewall, enabled TCP ports
+ufw_allowed_tcp_ports:
+  - "{{ ssh_port | default(22) }}"
+  - "{{ cockpit_port }}"
+  - 80
+  - 443
+
+###########################
+# Enable or disable roles #
+###########################
+
+tailscale_enabled: true         # Tailscale/ headscale for remote VPN access
+cockpit_enabled: true           # Cockpit for web-based server management UI
+borg_enabled: true              # Borg for incremental scheduled backups
+
+monit_enabled: true             # Monit for process monitoring and auto-restart
+logrotate_enabled: true         # Logrotate for log rotation
+node_exporter_enabled: true     # Node exporter for system metrics
+prometheus_enabled: true        # Prometheus for metrics storage
+loki_enabled: true              # Loki for log aggregation
+promtail_enabled: true          # Promtail for shipping logs to Loki
+grafana_enabled: true           # Grafana for metrics and log visualization
+
+fail2ban_enabled: true          # Fail2ban for SSH brute-force protection
+maldet_enabled: true            # Maldet for malware detection
+lynis_enabled: true             # Lynis for running security audits
+apparmor_enabled: true          # AppArmor for mandatory access control
+
+unattended_upgrades_enabled: true  # Auto-install security patches
+
+docker_enabled: true            # Installs Docker for running container apps
+docker_daemon_options:
+  log-driver: json-file
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
+  storage-driver: overlay2
+  # Keep containers running while dockerd restarts (e.g. package updates)
+  live-restore: true
+  default-ulimits:
+    nofile:
+      Name: nofile
+      Hard: 65535
+      Soft: 65535
+
+installs_enabled: true          # Will install listed apt packages
+users_enabled: true             # Will create users and groups
+directories_enabled: true       # Will create server structure directories
+timezone_enabled: true          # Will set timezone, and configure NTP
+hostname_enabled: true          # Will set hostname and /etc/hosts
+firewall_enabled: true          # Will configure UFW firewall
+mail_enabled: true              # Will install postfix for outgoing email alerts
+
+################
+# Miscellaneous #
+################
+timezone: Europe/London
+
+# Logrotate configuration
+logrotate_items:
+  - name: syslog-aggressive
+    path: /var/log/syslog
+    frequency: daily
+    rotate: 3
+    options: [missingok, compress, delaycompress, notifempty, copytruncate, maxsize 50M]
+    create: true
+    create_mode: "640"
+    create_owner: syslog
+    create_group: adm
+  - name: grafana
+    path: /var/log/grafana/*.log
+    frequency: daily
+    rotate: 3
+    options: [missingok, compress, delaycompress, notifempty, copytruncate]
+    create: false
+  - name: loki
+    path: /opt/loki/*.log
+    frequency: daily
+    rotate: 3
+    options: [missingok, compress, delaycompress, notifempty, copytruncate]
+    create: false
+  - name: prometheus
+    path: /var/log/prometheus/*.log
+    frequency: daily
+    rotate: 3
+    options: [missingok, compress, delaycompress, notifempty, copytruncate]
+    create: false
+
+

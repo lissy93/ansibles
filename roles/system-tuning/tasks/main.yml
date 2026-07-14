@@ -1,0 +1,118 @@
+---
+# ============================================
+# Swap configuration
+# ============================================
+- name: Check if swap file exists
+  ansible.builtin.stat:
+    path: "{{ swap_file_path }}"
+  register: swap_file
+  when: swap_enabled | bool
+
+- name: Create swap file
+  ansible.builtin.command:
+    cmd: "fallocate -l {{ swap_file_size }} {{ swap_file_path }}"
+    creates: "{{ swap_file_path }}"
+  when:
+    - swap_enabled | bool
+    - not swap_file.stat.exists | default(true)
+
+- name: Set swap file permissions
+  ansible.builtin.file:
+    path: "{{ swap_file_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: swap_enabled | bool
+
+- name: Format swap file
+  ansible.builtin.command:
+    cmd: "mkswap {{ swap_file_path }}"
+  when:
+    - swap_enabled | bool
+    - not swap_file.stat.exists | default(true)
+  changed_when: true
+
+- name: Enable swap file
+  ansible.builtin.command:
+    cmd: "swapon {{ swap_file_path }}"
+  when: swap_enabled | bool
+  changed_when: false
+  failed_when: false
+
+- name: Add swap to fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ swap_file_path }} none swap sw 0 0"
+    state: present
+    create: false
+  when: swap_enabled | bool
+
+# ============================================
+# Sysctl kernel tuning
+# ============================================
+- name: Apply sysctl stability tuning
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-server-tuning.conf
+    reload: true
+    state: present
+  loop: "{{ sysctl_settings | dict2items }}"
+
+# ============================================
+# Kernel security hardening
+# ============================================
+- name: Apply sysctl security hardening
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/98-security-hardening.conf
+    reload: true
+    state: present
+  loop: "{{ sysctl_security_settings | dict2items }}"
+
+# ============================================
+# Earlyoom - userspace OOM killer
+# ============================================
+- name: Install earlyoom
+  ansible.builtin.apt:
+    name: earlyoom
+    state: present
+  when: earlyoom_enabled | bool
+
+- name: Configure earlyoom
+  ansible.builtin.copy:
+    content: |
+      EARLYOOM_ARGS="-m {{ earlyoom_mem_threshold }} -s {{ earlyoom_swap_threshold }} -r 60 --prefer '(clickhouse|java|node)' -n"
+    dest: /etc/default/earlyoom
+    mode: "0644"
+  when: earlyoom_enabled | bool
+  notify: Restart earlyoom
+
+- name: Enable and start earlyoom
+  ansible.builtin.service:
+    name: earlyoom
+    state: started
+    enabled: true
+  when: earlyoom_enabled | bool
+
+# ============================================
+# Journald size cap
+# ============================================
+- name: Ensure journald.conf.d exists
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    mode: "0755"
+
+- name: Cap journald disk usage
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/size.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Journal]
+      SystemMaxUse={{ journald_max_use }}
+      RuntimeMaxUse={{ journald_runtime_max_use }}
+  notify: Restart journald

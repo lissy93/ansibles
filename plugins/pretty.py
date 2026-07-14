@@ -71,14 +71,14 @@ class CallbackModule(DefaultCb):
             self._display.display(line, color='magenta', screen_only=True)
         self._printed_handler_roles = set()
 
-    # —— Override includes to get an emoji —— #
+    # -- Override includes to get an emoji -- #
     def v2_playbook_on_include(self, included_file):
         hosts = ", ".join(h.name for h in included_file._hosts)
         emoji, color = self.STATUS_EMOJI["info"]
         self._display.display(f"[{hosts}] {emoji} Prepared for next role: {included_file._filename} ", color=None, newline=False)
         self._display.display(f"(Done)", color=color)
 
-    # —— Per‐task callbacks —— #
+    # -- Per-task callbacks -- #
     def v2_runner_on_ok(self, result):
         
         action = result._task.action
@@ -128,20 +128,42 @@ class CallbackModule(DefaultCb):
         self._display.display(f"[{host}] {emoji} {task} ", color=None, newline=False)
         self._display.display("(Failed)", color=color)
 
+        indent = " " * (len(host) + 3)
+
+        # Display main error message
         msg = result._result.get("msg")
         if msg:
-            indent = " " * (len(host) + 3)
             for line in str(msg).splitlines():
                 self._display.display(f"{indent}{line}", color="dark gray")
 
+        # Display module-specific stderr/stdout
+        module_stderr = result._result.get("module_stderr")
+        if module_stderr:
+            self._display.display(f"{indent}Module stderr:", color="dark gray")
+            for line in str(module_stderr).splitlines():
+                self._display.display(f"{indent}  {line}", color="dark gray")
+
+        module_stdout = result._result.get("module_stdout")
+        if module_stdout:
+            self._display.display(f"{indent}Module stdout:", color="dark gray")
+            for line in str(module_stdout).splitlines():
+                self._display.display(f"{indent}  {line}", color="dark gray")
+
+        # Display regular stderr/stdout
         stderr = result._result.get("stderr")
         if stderr:
-            indent = " " * (len(host) + 3)
-            self._display.display(f"{indent}stderr: {stderr}", color="dark gray")
+            self._display.display(f"{indent}Stderr: {stderr}", color="dark gray")
+
         stdout = result._result.get("stdout")
         if stdout:
-            indent = " " * (len(host) + 3)
-            self._display.display(f"{indent}stdout: {stdout}", color="dark gray")
+            self._display.display(f"{indent}Stdout: {stdout}", color="dark gray")
+
+        # Display exception details if available
+        exception = result._result.get("exception")
+        if exception:
+            self._display.display(f"{indent}Exception:", color="dark gray")
+            for line in str(exception).splitlines()[:5]:  # Limit to first 5 lines
+                self._display.display(f"{indent}  {line}", color="dark gray")
 
 
     def v2_runner_on_skipped(self, result):
@@ -176,7 +198,7 @@ class CallbackModule(DefaultCb):
         self._display.display(line, color='yellow', screen_only=True)
         self._printed_handler_roles.add(role_name)
 
-    # —— Loop‐item callbacks —— #
+    # -- Loop-item callbacks -- #
     def _print_item_details(self, result, host):
         """Helper to print msg, item.key/value, and diff.before→after."""
         indent = " " * (len(host) + 3)  # align under “[host] ”

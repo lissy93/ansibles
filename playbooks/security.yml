@@ -10,10 +10,16 @@
   become: true
   tags: security
 
+  pre_tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      tags: always
   tasks:
     - name: Include fail2ban role
       ansible.builtin.include_role:
         name: fail2ban
+        apply:
+          tags: [fail2ban]
       when: fail2ban_enabled | default(true)
       tags: [fail2ban]
       ignore_errors: true  # noqa ignore-errors
@@ -21,6 +27,8 @@
     - name: Include maldet role
       ansible.builtin.include_role:
         name: maldet
+        apply:
+          tags: [maldet]
       when: maldet_enabled | default(true)
       tags: [maldet]
       ignore_errors: true  # noqa ignore-errors
@@ -28,6 +36,8 @@
     - name: Include lynis role
       ansible.builtin.include_role:
         name: lynis
+        apply:
+          tags: [lynis]
       when: lynis_enabled | default(true)
       tags: [lynis]
       ignore_errors: true  # noqa ignore-errors
@@ -39,4 +49,13 @@
         run_scan: true  # noqa: var-naming[no-role-prefix]
       when: apparmor_enabled | default(true)
       tags: [apparmor]
+      ignore_errors: true  # noqa ignore-errors
+
+    - name: Include unattended-upgrades role
+      ansible.builtin.include_role:
+        name: unattended-upgrades
+        apply:
+          tags: [unattended-upgrades]
+      when: unattended_upgrades_enabled | default(true)
+      tags: [unattended-upgrades]
       ignore_errors: true  # noqa ignore-errors

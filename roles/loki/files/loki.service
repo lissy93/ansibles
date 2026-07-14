@@ -5,8 +5,12 @@ After=network.target
 [Service]
 ExecStart=/opt/loki/loki -config.file=/etc/loki/config.yml
 Restart=on-failure
-User=root
-Group=root
+RestartSec=10
+User=loki
+Group=loki
+MemoryMax=192M
+MemoryHigh=160M
+CPUQuota=50%
 
 [Install]
 WantedBy=multi-user.target

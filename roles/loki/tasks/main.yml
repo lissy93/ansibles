@@ -1,3 +1,4 @@
+---
 - name: "Loki role disabled or missing config, skipping"
   ansible.builtin.meta: end_host
   when: not loki_enabled | default(false) or loki_config is not defined
@@ -10,40 +11,77 @@
     update_cache: false
     state: present
 
+- name: Ensure loki group exists
+  ansible.builtin.group:
+    name: loki
+    state: present
+    system: true
+
+- name: Ensure loki user exists
+  ansible.builtin.user:
+    name: loki
+    group: loki
+    create_home: false
+    shell: /usr/sbin/nologin
+    system: true
+    state: present
+
 - name: "Create Loki directories"
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
-    owner: root
-    group: root
+    owner: loki
+    group: loki
     mode: "0755"
+    recurse: true
   loop:
     - /opt/loki
     - /etc/loki
+
+- name: "Check current Loki version"
+  ansible.builtin.command: /opt/loki/loki --version
+  register: loki_current_version
+  changed_when: false
+  failed_when: false
 
 - name: "Download Loki binary"
   ansible.builtin.get_url:
     url: "{{ loki_url }}"
     dest: /tmp/loki.zip
     mode: "0644"
+  when: loki_version not in (loki_current_version.stdout | default(''))
+  retries: 3
+  delay: 5
 
 - name: "Extract Loki binary"
   ansible.builtin.unarchive:
     src: /tmp/loki.zip
-    dest: /opt/loki
+    dest: /tmp/
     remote_src: true
+  when: loki_version not in (loki_current_version.stdout | default(''))
 
-- name: "Rename Loki binary"
-  ansible.builtin.command: mv /opt/loki/loki-linux-amd64 /opt/loki/loki
-  args:
-    creates: /opt/loki/loki
+- name: "Install Loki binary"
+  ansible.builtin.copy:
+    src: "/tmp/loki-linux-{{ loki_arch }}"
+    dest: /opt/loki/loki
+    remote_src: true
+    owner: loki
+    group: loki
+    mode: "0755"
+  when: loki_version not in (loki_current_version.stdout | default(''))
+  notify: Restart loki
+
+- name: "Remove stray extracted binary copy"
+  ansible.builtin.file:
+    path: "/opt/loki/loki-linux-{{ loki_arch }}"
+    state: absent
 
 - name: "Deploy loki config"
   ansible.builtin.copy:
     content: "{{ loki_config }}"
     dest: /etc/loki/config.yml
-    owner: root
-    group: root
+    owner: loki
+    group: loki
     mode: "0644"
   notify: Restart loki
 
@@ -52,13 +90,16 @@
     src: loki.service
     dest: /etc/systemd/system/loki.service
     mode: "0644"
-  notify: Reload systemd
+  notify:
+    - Reload systemd
+    - Restart loki
 
 - name: "Ensure loki is enabled and started"
   ansible.builtin.systemd:
     name: loki
     enabled: true
     state: started
+    daemon_reload: true
   register: loki_systemd
 
 - name: "Verify loki is running"

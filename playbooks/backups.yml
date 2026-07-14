@@ -3,6 +3,10 @@
   hosts: all
   become: true
   tags: backups
+  pre_tasks:
+    - name: Gather facts
+      ansible.builtin.setup:
+      tags: always
   tasks:
     - name: Configure Borg backups
       block:
